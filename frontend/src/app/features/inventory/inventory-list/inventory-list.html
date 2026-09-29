@@ -1,0 +1,209 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-header-left"><h1>Inventory</h1><p>Manage printing materials and stock</p></div>
+    <div class="page-header-actions">
+      <button class="btn btn-primary" (click)="showAddForm = !showAddForm">
+        <span class="material-icons-outlined">add</span> Add Material
+      </button>
+    </div>
+  </div>
+
+  <!-- Low Stock Warning Banner -->
+  @if (outOfStockCount > 0 || lowStockCount > 0) {
+    <div class="alert alert-warning mb-4" style="display:flex;align-items:center;gap:0.75rem;padding:0.875rem 1.25rem;border-radius:8px">
+      <span class="material-icons-outlined text-warning" style="font-size:1.75rem">warning</span>
+      <div style="flex:1">
+        <strong>Inventory Stock Alerts:</strong>
+        <span>{{ outOfStockCount }} item(s) out of stock, {{ lowStockCount }} item(s) below reorder threshold.</span>
+      </div>
+      <button class="btn btn-sm btn-secondary" (click)="selectedStatus = 'low'; applyFilters()">Show Low Stock</button>
+    </div>
+  }
+
+  <!-- Add Material Form -->
+  @if (showAddForm) {
+    <div class="card card-body mb-6">
+      <h2 class="section-label">Add New Inventory Material</h2>
+      <form [formGroup]="addForm" (ngSubmit)="onAdd()">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Material Name *</label>
+            <input class="form-control" formControlName="material_name" placeholder="e.g. 350gsm Silk Artboard" />
+          </div>
+          <div class="form-group">
+            <label>Category *</label>
+            <select class="form-control" formControlName="category">
+              @for (cat of categories; track cat) {
+                <option [value]="cat">{{ cat | titlecase }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>SKU Code</label>
+            <input class="form-control" formControlName="sku" placeholder="e.g. PAP-SLK-350" />
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Initial Quantity *</label>
+            <input type="number" class="form-control" formControlName="quantity" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Unit *</label>
+            <input class="form-control" formControlName="unit" placeholder="e.g. sheets, rolls, litres, meters" />
+          </div>
+          <div class="form-group">
+            <label>Minimum Reorder Level *</label>
+            <input type="number" class="form-control" formControlName="minimum_stock_level" min="0" />
+          </div>
+          <div class="form-group">
+            <label>Unit Cost</label>
+            <input type="number" class="form-control" formControlName="unit_cost" placeholder="0.00" step="0.01" />
+          </div>
+          <div class="form-group">
+            <label>Storage Location</label>
+            <input class="form-control" formControlName="location" placeholder="e.g. Warehouse Bay 2" />
+          </div>
+        </div>
+        <div style="display:flex;gap:.75rem;justify-content:flex-end;margin-top:1rem">
+          <button type="button" class="btn btn-secondary" (click)="showAddForm=false">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Adding…' : 'Save Material' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Filter & Search Controls -->
+  <div class="actions-bar" style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;margin-bottom:1.25rem">
+    <div class="search-input-wrapper" style="flex:1;min-width:240px">
+      <span class="material-icons-outlined search-icon">search</span>
+      <input class="form-control" type="text" placeholder="Search by name, SKU, or supplier…"
+             [(ngModel)]="searchTerm" (ngModelChange)="onSearch()" />
+    </div>
+    
+    <div style="display:flex;gap:0.75rem;align-items:center">
+      <select class="form-control" style="width:160px" [(ngModel)]="selectedCategory" (ngModelChange)="applyFilters()">
+        <option value="">All Categories</option>
+        @for (cat of categories; track cat) {
+          <option [value]="cat">{{ cat | titlecase }}</option>
+        }
+      </select>
+
+      <select class="form-control" style="width:160px" [(ngModel)]="selectedStatus" (ngModelChange)="applyFilters()">
+        <option value="">All Stock Levels</option>
+        <option value="ok">In Stock</option>
+        <option value="low">Low Stock (Alert)</option>
+        <option value="out">Out of Stock</option>
+      </select>
+    </div>
+
+    <span class="text-muted text-sm">{{ filteredItems.length }} of {{ total }} items</span>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (isLoading) {
+      @for (i of [1,2,3,4,5,6]; track i) { <div class="skeleton skeleton-row"></div> }
+    } @else if (filteredItems.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon"><span class="material-icons-outlined">inventory_2</span></div>
+        <h3>No materials found</h3><p>No inventory items match your selected filter criteria.</p>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th>SKU</th>
+            <th>Category</th>
+            <th>Current Stock</th>
+            <th>Min Level</th>
+            <th>Unit Cost</th>
+            <th>Supplier</th>
+            <th>Location</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (item of filteredItems; track item.id) {
+            <tr>
+              <td>
+                <div class="font-medium text-main">{{ item.material_name }}</div>
+              </td>
+              <td class="font-mono text-xs text-muted">{{ item.sku || '—' }}</td>
+              <td><span class="badge badge-neutral text-xs">{{ item.category }}</span></td>
+              <td class="font-semibold" [class.text-danger]="item.stock_status !== 'ok'">
+                {{ item.quantity }} <span class="text-muted font-normal text-xs">{{ item.unit }}</span>
+              </td>
+              <td class="text-muted">{{ item.minimum_stock_level }}</td>
+              <td class="font-mono text-xs">{{ item.unit_cost ? (item.unit_cost | currency:'LKR ':'symbol':'1.2-2') : '—' }}</td>
+              <td class="text-sm">{{ (item.suppliers?.supplier_name) || '—' }}</td>
+              <td class="text-xs text-muted">{{ item.location || 'Warehouse' }}</td>
+              <td>
+                @if (item.stock_status === 'out') {
+                  <span class="badge badge-danger">OUT OF STOCK</span>
+                } @else if (item.stock_status === 'low') {
+                  <span class="badge badge-warning">LOW STOCK</span>
+                } @else {
+                  <span class="badge badge-success">IN STOCK</span>
+                }
+              </td>
+              <td>
+                <button class="btn btn-secondary btn-sm" (click)="openAdjust(item)">
+                  <span class="material-icons-outlined text-xs">tune</span> Adjust
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- Adjust Stock Modal -->
+@if (adjustingItem) {
+  <div class="modal-overlay" (click)="adjustingItem=null">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Adjust Stock — {{ adjustingItem.material_name }}</h2>
+        <button class="btn btn-ghost btn-icon" (click)="adjustingItem=null">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p class="text-muted text-sm" style="margin-bottom:1.25rem">
+          Current: <strong>{{ adjustingItem.quantity }} {{ adjustingItem.unit }}</strong>
+        </p>
+        <div class="form-group">
+          <label>Action *</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" [(ngModel)]="adjustAction" value="ADD" /> Add Stock
+            </label>
+            <label class="radio-label">
+              <input type="radio" [(ngModel)]="adjustAction" value="REMOVE" /> Remove Stock
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Quantity *</label>
+          <input type="number" class="form-control" [(ngModel)]="adjustQty" min="0.01" step="0.01" />
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <input class="form-control" [(ngModel)]="adjustNotes" placeholder="Reason for adjustment" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="adjustingItem=null">Cancel</button>
+        <button class="btn btn-primary" (click)="submitAdjust()" [disabled]="isAdjusting">
+          {{ isAdjusting ? 'Saving…' : 'Confirm Adjustment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

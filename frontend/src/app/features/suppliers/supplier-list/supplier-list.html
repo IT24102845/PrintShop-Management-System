@@ -1,0 +1,189 @@
+<div class="page-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Suppliers</h1>
+      <p>Manage raw material suppliers, vendor contacts, and payment terms</p>
+    </div>
+    <div class="page-header-actions">
+      <button class="btn btn-primary" (click)="openAddModal()">
+        <span class="material-icons-outlined">add</span> Add Supplier
+      </button>
+    </div>
+  </div>
+
+  <!-- Search & Stats Bar -->
+  <div class="actions-bar">
+    <div class="actions-bar-left">
+      <div class="search-input-wrapper" style="flex:1;max-width:320px">
+        <span class="material-icons-outlined search-icon">search</span>
+        <input class="form-control" [(ngModel)]="searchTerm" (ngModelChange)="onSearch()" placeholder="Search suppliers by name..." />
+      </div>
+    </div>
+    <div class="actions-bar-right">
+      <span class="text-muted text-sm">{{ total }} suppliers registered</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (isLoading) {
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="skeleton skeleton-row"></div>
+      }
+    } @else if (suppliers.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon"><span class="material-icons-outlined">local_shipping</span></div>
+        <h3>No Suppliers Found</h3>
+        <p>{{ searchTerm ? 'No suppliers match your search.' : 'Add your first supplier to link inventory materials.' }}</p>
+        <button class="btn btn-primary" (click)="openAddModal()">Add Supplier</button>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Supplier Name</th>
+            <th>Contact Person</th>
+            <th>Contact Info</th>
+            <th>Location</th>
+            <th>Payment Terms</th>
+            <th>Status</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of suppliers; track s.id) {
+            <tr>
+              <td>
+                <div class="font-bold text-main">{{ s.supplier_name }}</div>
+                @if (s.website) {
+                  <a [href]="s.website" target="_blank" class="text-xs text-muted supplier-web">
+                    <span class="material-icons-outlined">link</span> {{ s.website.replace('https://', '').replace('http://', '') }}
+                  </a>
+                }
+              </td>
+              <td>
+                <span class="text-sm">{{ s.contact_person || '—' }}</span>
+              </td>
+              <td>
+                <div class="contact-stack">
+                  @if (s.email) {
+                    <span class="contact-line">
+                      <span class="material-icons-outlined">email</span>
+                      <a [href]="'mailto:' + s.email">{{ s.email }}</a>
+                    </span>
+                  }
+                  @if (s.phone) {
+                    <span class="contact-line">
+                      <span class="material-icons-outlined">phone</span>
+                      <a [href]="'tel:' + s.phone">{{ s.phone }}</a>
+                    </span>
+                  }
+                  @if (!s.email && !s.phone) {
+                    <span class="text-muted text-xs">—</span>
+                  }
+                </div>
+              </td>
+              <td class="text-sm text-muted">
+                {{ s.address || '—' }}
+              </td>
+              <td>
+                <span class="terms-badge">{{ s.payment_terms || 'Standard' }}</span>
+              </td>
+              <td>
+                @if (s.is_active) {
+                  <span class="badge badge-success">Active</span>
+                } @else {
+                  <span class="badge badge-neutral">Inactive</span>
+                }
+              </td>
+              <td style="text-align: right;">
+                <div class="actions-group">
+                  <button class="btn btn-ghost btn-sm" (click)="openEditModal(s)" title="Edit Supplier">
+                    <span class="material-icons-outlined">edit</span>
+                  </button>
+                  <button
+                    class="btn btn-secondary btn-sm"
+                    (click)="toggleActive(s)"
+                    [title]="s.is_active ? 'Deactivate Supplier' : 'Activate Supplier'">
+                    {{ s.is_active ? 'Deactivate' : 'Activate' }}
+                  </button>
+                  <button class="btn btn-ghost btn-sm text-danger" (click)="deleteSupplier(s)" title="Delete Supplier">
+                    <span class="material-icons-outlined">delete</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+
+</div>
+
+<!-- Modal Dialog for Add / Edit -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="showModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>{{ isEditing() ? 'Edit Supplier' : 'New Material Supplier' }}</h3>
+        <button class="modal-close" (click)="showModal.set(false)">✕</button>
+      </div>
+      <form [formGroup]="supplierForm" (ngSubmit)="onSubmit()">
+        <div class="modal-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Supplier / Company Name *</label>
+              <input class="form-input" formControlName="supplier_name" placeholder="e.g. Master Paper Mills Ltd" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Contact Person</label>
+              <input class="form-input" formControlName="contact_person" placeholder="e.g. Ruwan Silva" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Email Address</label>
+              <input type="email" class="form-input" formControlName="email" placeholder="sales@supplier.com" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input class="form-input" formControlName="phone" placeholder="+94 11 234 5678" />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Website</label>
+              <input class="form-input" formControlName="website" placeholder="https://supplier.com" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Terms</label>
+              <input class="form-input" formControlName="payment_terms" placeholder="e.g. Net 30, COD, Prepaid" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Physical Address</label>
+            <input class="form-input" formControlName="address" placeholder="e.g. 45 Industrial Zone, Colombo" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes</label>
+            <textarea class="form-input" rows="2" formControlName="notes" placeholder="Special arrangements or discounts..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="showModal.set(false)">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || supplierForm.invalid">
+            {{ isSubmitting ? 'Saving...' : (isEditing() ? 'Save Changes' : 'Add Supplier') }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

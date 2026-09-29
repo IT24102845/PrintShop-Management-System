@@ -1,0 +1,274 @@
+PrintShop-Management-System/
+├── backend/
+│   ├── data/
+│   │   └── offers.json
+│   ├── src/
+│   │   ├── config/
+│   │   │   ├── database.ts
+│   │   │   └── supabase.ts
+│   │   ├── controllers/
+│   │   │   ├── auth.controller.ts
+│   │   │   ├── customer.controller.ts
+│   │   │   ├── design.controller.ts
+│   │   │   ├── health.controller.ts
+│   │   │   ├── inventory.controller.ts
+│   │   │   ├── offer.controller.ts
+│   │   │   ├── order.controller.ts
+│   │   │   ├── payment.controller.ts
+│   │   │   ├── production.controller.ts
+│   │   │   ├── quotation.controller.ts
+│   │   │   └── supplier.controller.ts
+│   │   ├── middleware/
+│   │   │   ├── auth.middleware.ts
+│   │   │   ├── error.middleware.ts
+│   │   │   └── validation.middleware.ts
+│   │   ├── models/
+│   │   │   ├── customer.model.ts
+│   │   │   ├── design.model.ts
+│   │   │   ├── employee.model.ts
+│   │   │   ├── index.ts
+│   │   │   ├── inventory.model.ts
+│   │   │   ├── offer.model.ts
+│   │   │   ├── order.model.ts
+│   │   │   ├── payment.model.ts
+│   │   │   ├── production-task.model.ts
+│   │   │   ├── quotation.model.ts
+│   │   │   ├── README.md
+│   │   │   ├── supplier.model.ts
+│   │   │   └── user.model.ts
+│   │   ├── routes/
+│   │   │   ├── v1/
+│   │   │   │   ├── auth.routes.ts
+│   │   │   │   ├── customer.routes.ts
+│   │   │   │   ├── design.routes.ts
+│   │   │   │   ├── health.routes.ts
+│   │   │   │   ├── index.ts
+│   │   │   │   ├── inventory.routes.ts
+│   │   │   │   ├── offer.routes.ts
+│   │   │   │   ├── order.routes.ts
+│   │   │   │   ├── payment.routes.ts
+│   │   │   │   ├── production.routes.ts
+│   │   │   │   ├── quotation.routes.ts
+│   │   │   │   └── supplier.routes.ts
+│   │   │   └── index.ts
+│   │   ├── scripts/
+│   │   │   ├── seed-complete.js
+│   │   │   └── test-lifecycle.js
+│   │   ├── services/
+│   │   │   ├── auth.service.ts
+│   │   │   ├── customer.service.ts
+│   │   │   ├── design.service.ts
+│   │   │   ├── health.service.ts
+│   │   │   ├── inventory.service.ts
+│   │   │   ├── offer.service.ts
+│   │   │   ├── order.service.ts
+│   │   │   ├── payment.service.ts
+│   │   │   ├── production.service.ts
+│   │   │   ├── quotation.service.ts
+│   │   │   └── supplier.service.ts
+│   │   ├── types/
+│   │   │   └── index.ts
+│   │   ├── utils/
+│   │   │   ├── logger.ts
+│   │   │   └── response.util.ts
+│   │   └── server.ts
+│   ├── .env.example
+│   ├── .gitignore
+│   ├── package.json
+│   └── tsconfig.json
+├── database/
+│   ├── migrations/
+│   │   ├── 001_enable_extensions_trigger.sql
+│   │   ├── 001_initial_setup.sql
+│   │   ├── 002_create_users.sql
+│   │   ├── 003_create_customers_employees.sql
+│   │   ├── 004_create_orders.sql
+│   │   ├── 005_create_quotations_designs.sql
+│   │   ├── 006_create_suppliers_inventory.sql
+│   │   ├── 007_create_production_tasks.sql
+│   │   ├── 008_create_payments.sql
+│   │   ├── 009_create_views.sql
+│   │   ├── 010_update_user_roles.sql
+│   │   ├── 020_update_production_status.sql
+│   │   ├── 021_fix_production_tasks_default.sql
+│   │   └── 022_create_offers.sql
+│   ├── schema.sql
+│   └── seed-data.sql
+├── docs/
+│   └── README.md
+├── frontend/
+│   ├── .vscode/
+│   │   ├── extensions.json
+│   │   ├── launch.json
+│   │   └── tasks.json
+│   ├── public/
+│   │   ├── dashboard-lion.png
+│   │   ├── favicon.ico
+│   │   ├── lion-avatar.png
+│   │   ├── lion-emblem.png
+│   │   ├── lion-watermark.png
+│   │   ├── logo-square.png
+│   │   ├── logo-transparent.png
+│   │   └── logo.png
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── core/
+│   │   │   │   ├── guards/
+│   │   │   │   │   └── auth.guard.ts
+│   │   │   │   ├── interceptors/
+│   │   │   │   │   └── auth.interceptor.ts
+│   │   │   │   └── services/
+│   │   │   │       ├── auth.service.ts
+│   │   │   │       ├── customer.service.ts
+│   │   │   │       ├── dashboard.service.ts
+│   │   │   │       ├── design.service.ts
+│   │   │   │       ├── inventory.service.ts
+│   │   │   │       ├── offer.service.ts
+│   │   │   │       ├── order.service.ts
+│   │   │   │       ├── payment.service.ts
+│   │   │   │       ├── production.service.ts
+│   │   │   │       ├── quotation.service.ts
+│   │   │   │       ├── storage.service.ts
+│   │   │   │       ├── supplier.service.ts
+│   │   │   │       └── toast.service.ts
+│   │   │   ├── features/
+│   │   │   │   ├── auth/
+│   │   │   │   │   ├── login/
+│   │   │   │   │   │   ├── login.html
+│   │   │   │   │   │   ├── login.scss
+│   │   │   │   │   │   └── login.ts
+│   │   │   │   │   └── register/
+│   │   │   │   │       ├── register.html
+│   │   │   │   │       ├── register.scss
+│   │   │   │   │       └── register.ts
+│   │   │   │   ├── customer-portal/
+│   │   │   │   │   ├── create-order/
+│   │   │   │   │   │   └── create-order.ts
+│   │   │   │   │   ├── customer-dashboard/
+│   │   │   │   │   │   └── customer-dashboard.ts
+│   │   │   │   │   ├── my-designs/
+│   │   │   │   │   │   └── my-designs.ts
+│   │   │   │   │   ├── my-orders/
+│   │   │   │   │   │   └── my-orders.ts
+│   │   │   │   │   ├── my-quotations/
+│   │   │   │   │   │   └── my-quotations.ts
+│   │   │   │   │   └── profile/
+│   │   │   │   │       └── customer-profile.ts
+│   │   │   │   ├── customers/
+│   │   │   │   │   ├── customer-details/
+│   │   │   │   │   │   ├── customer-details.html
+│   │   │   │   │   │   ├── customer-details.scss
+│   │   │   │   │   │   └── customer-details.ts
+│   │   │   │   │   ├── customer-form/
+│   │   │   │   │   │   ├── customer-form.html
+│   │   │   │   │   │   ├── customer-form.scss
+│   │   │   │   │   │   └── customer-form.ts
+│   │   │   │   │   └── customer-list/
+│   │   │   │   │       ├── customer-list.html
+│   │   │   │   │       ├── customer-list.scss
+│   │   │   │   │       └── customer-list.ts
+│   │   │   │   ├── dashboard/
+│   │   │   │   │   ├── dashboard.html
+│   │   │   │   │   ├── dashboard.scss
+│   │   │   │   │   └── dashboard.ts
+│   │   │   │   ├── designs/
+│   │   │   │   │   └── design-list/
+│   │   │   │   │       └── design-list.ts
+│   │   │   │   ├── inventory/
+│   │   │   │   │   └── inventory-list/
+│   │   │   │   │       ├── inventory-list.html
+│   │   │   │   │       ├── inventory-list.scss
+│   │   │   │   │       └── inventory-list.ts
+│   │   │   │   ├── offers/
+│   │   │   │   │   └── offer-list/
+│   │   │   │   │       ├── offer-list.html
+│   │   │   │   │       ├── offer-list.scss
+│   │   │   │   │       └── offer-list.ts
+│   │   │   │   ├── orders/
+│   │   │   │   │   ├── order-detail/
+│   │   │   │   │   │   ├── order-detail.html
+│   │   │   │   │   │   ├── order-detail.scss
+│   │   │   │   │   │   └── order-detail.ts
+│   │   │   │   │   ├── order-details/
+│   │   │   │   │   │   ├── order-details.html
+│   │   │   │   │   │   ├── order-details.scss
+│   │   │   │   │   │   └── order-details.ts
+│   │   │   │   │   ├── order-form/
+│   │   │   │   │   │   ├── order-form.html
+│   │   │   │   │   │   ├── order-form.scss
+│   │   │   │   │   │   └── order-form.ts
+│   │   │   │   │   └── order-list/
+│   │   │   │   │       ├── order-list.html
+│   │   │   │   │       ├── order-list.scss
+│   │   │   │   │       └── order-list.ts
+│   │   │   │   ├── payments/
+│   │   │   │   │   └── payment-list/
+│   │   │   │   │       ├── payment-list.html
+│   │   │   │   │       ├── payment-list.scss
+│   │   │   │   │       └── payment-list.ts
+│   │   │   │   ├── production/
+│   │   │   │   │   └── production-queue/
+│   │   │   │   │       └── production-queue.ts
+│   │   │   │   ├── quotations/
+│   │   │   │   │   └── quotation-list/
+│   │   │   │   │       └── quotation-list.ts
+│   │   │   │   ├── reports/
+│   │   │   │   │   └── reports-view/
+│   │   │   │   │       ├── reports-view.html
+│   │   │   │   │       ├── reports-view.scss
+│   │   │   │   │       └── reports-view.ts
+│   │   │   │   └── suppliers/
+│   │   │   │       └── supplier-list/
+│   │   │   │           ├── supplier-list.html
+│   │   │   │           ├── supplier-list.scss
+│   │   │   │           └── supplier-list.ts
+│   │   │   ├── shared/
+│   │   │   │   ├── components/
+│   │   │   │   │   ├── file-upload/
+│   │   │   │   │   │   ├── file-upload.scss
+│   │   │   │   │   │   └── file-upload.ts
+│   │   │   │   │   ├── status-badge/
+│   │   │   │   │   │   └── status-badge.ts
+│   │   │   │   │   └── toast/
+│   │   │   │   │       └── toast.component.ts
+│   │   │   │   └── layouts/
+│   │   │   │       ├── app-layout/
+│   │   │   │       │   ├── app-layout.html
+│   │   │   │       │   ├── app-layout.scss
+│   │   │   │       │   └── app-layout.ts
+│   │   │   │       ├── customer-layout/
+│   │   │   │       │   ├── customer-layout.html
+│   │   │   │       │   ├── customer-layout.scss
+│   │   │   │       │   └── customer-layout.ts
+│   │   │   │       ├── sidebar/
+│   │   │   │       │   ├── sidebar.html
+│   │   │   │       │   ├── sidebar.scss
+│   │   │   │       │   └── sidebar.ts
+│   │   │   │       ├── top-nav/
+│   │   │   │       │   ├── top-nav.html
+│   │   │   │       │   ├── top-nav.scss
+│   │   │   │       │   └── top-nav.ts
+│   │   │   │       └── nav.config.ts
+│   │   │   ├── app.config.ts
+│   │   │   ├── app.html
+│   │   │   ├── app.routes.ts
+│   │   │   ├── app.scss
+│   │   │   └── app.ts
+│   │   ├── environments/
+│   │   │   ├── environment.development.ts
+│   │   │   └── environment.ts
+│   │   ├── index.html
+│   │   ├── main.ts
+│   │   └── styles.scss
+│   ├── .editorconfig
+│   ├── .gitignore
+│   ├── .prettierrc
+│   ├── angular.json
+│   ├── package.json
+│   ├── proxy.conf.json
+│   ├── README.md
+│   ├── tsconfig.app.json
+│   ├── tsconfig.json
+│   └── tsconfig.spec.json
+├── .gitignore
+└── README.md

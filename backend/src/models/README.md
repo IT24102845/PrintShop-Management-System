@@ -1,0 +1,24 @@
+-- =============================================================================
+-- PrintShop Management System — Model Definitions
+-- =============================================================================
+-- This folder will contain TypeScript interfaces and types that mirror the
+-- Supabase database tables (generated or hand-written).
+--
+-- Recommended structure when modules are built:
+--
+--   models/
+--   ├── user.model.ts
+--   ├── customer.model.ts
+--   ├── order.model.ts
+--   ├── job.model.ts
+--   ├── product.model.ts
+--   ├── invoice.model.ts
+--   ├── payment.model.ts
+--   ├── inventory.model.ts
+--   └── supplier.model.ts
+--
+-- Each model file exports:
+--   - A base interface matching the DB table row
+--   - A "Create" DTO (without id/created_at)
+--   - An "Update" DTO (all fields optional)
+-- =============================================================================

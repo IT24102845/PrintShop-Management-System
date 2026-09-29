@@ -1,0 +1,239 @@
+<div class="page-container">
+
+  <!-- Page Header -->
+  <div class="dashboard-header">
+    <!-- Artistic Lion Watermark Background -->
+    <div class="dashboard-header-watermark">
+      <img src="/dashboard-lion.png" alt="Supreme Lion" class="header-watermark-img" />
+    </div>
+
+    <div class="dashboard-header-text">
+      <h1 class="apple-hero-headline" style="font-size:2.25rem;margin-bottom:0.25rem">
+        <span class="headline-bold">{{ getGreeting() }}, </span>
+        <span class="headline-muted">{{ getFirstName() }}</span>
+      </h1>
+      <p class="dashboard-subtitle">Here's what's happening at Supreme Advertising today.</p>
+    </div>
+    @if (authService.isAdminOrManager()) {
+      <a routerLink="/app/orders/new" class="apple-pill-btn pill-primary header-cta-btn" style="padding:0.55rem 1.35rem;font-size:0.875rem">
+        <span class="material-icons-outlined" style="font-size:1.1rem">add</span> New Order
+      </a>
+    }
+  </div>
+
+  <!-- Loading Skeletons -->
+  @if (isLoading) {
+    <div class="metrics-grid">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="card metric-card">
+          <div class="skeleton" style="width:52px;height:52px;border-radius:12px;flex-shrink:0"></div>
+          <div class="metric-content" style="flex:1">
+            <span class="skeleton skeleton-text" style="width:60%"></span>
+            <span class="skeleton" style="height:2rem;width:40%;border-radius:4px;margin-top:0.5rem;display:block"></span>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- KPI Cards (Requirement 21: 6 essential cards) -->
+  @if (!isLoading) {
+    <div class="metrics-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px, 1fr))">
+
+      <!-- 1. Total Customers -->
+      <div class="card metric-card">
+        <div class="metric-icon bg-portal-light text-portal">
+          <span class="material-icons-outlined">groups</span>
+        </div>
+        <div class="metric-content">
+          <p class="metric-title">Total Customers</p>
+          <p class="metric-value">{{ totalCustomers }}</p>
+          <p class="metric-sub">Registered accounts</p>
+        </div>
+      </div>
+
+      <!-- 2. Total Orders -->
+      <div class="card metric-card">
+        <div class="metric-icon bg-primary-light text-primary">
+          <span class="material-icons-outlined">receipt_long</span>
+        </div>
+        <div class="metric-content">
+          <p class="metric-title">Total Orders</p>
+          <p class="metric-value">{{ totalOrders }}</p>
+          <p class="metric-sub">Lifetime orders</p>
+        </div>
+      </div>
+
+      <!-- 3. Active Production Jobs -->
+      <div class="card metric-card">
+        <div class="metric-icon bg-info-light text-info">
+          <span class="material-icons-outlined">precision_manufacturing</span>
+        </div>
+        <div class="metric-content">
+          <p class="metric-title">Active Jobs</p>
+          <p class="metric-value">{{ productionStats?.activeProduction ?? 0 }}</p>
+          <p class="metric-sub">Jobs currently on press</p>
+        </div>
+      </div>
+
+      <!-- 4. Completed Orders -->
+      <div class="card metric-card">
+        <div class="metric-icon bg-success-light text-success">
+          <span class="material-icons-outlined">task_alt</span>
+        </div>
+        <div class="metric-content">
+          <p class="metric-title">Completed Orders</p>
+          <p class="metric-value">{{ productionStats?.completedJobs ?? 0 }}</p>
+          <p class="metric-sub">Delivered & verified</p>
+        </div>
+      </div>
+
+      <!-- 5. Real Recorded Revenue -->
+      <div class="card metric-card">
+        <div class="metric-icon bg-purple-light text-purple">
+          <span class="material-icons-outlined">payments</span>
+        </div>
+        <div class="metric-content">
+          <p class="metric-title">Total Revenue</p>
+          <p class="metric-value font-mono" style="font-size:1.4rem">
+            {{ revenueStats?.totalRevenue ? (revenueStats.totalRevenue | currency:'LKR ':'symbol':'1.0-0') : 'LKR 0' }}
+          </p>
+          <p class="metric-sub">{{ revenueStats?.completedPaymentsCount ?? 0 }} payments received</p>
+        </div>
+      </div>
+
+      <!-- 6. Low Stock Items -->
+      <div class="card metric-card">
+        <div class="metric-icon bg-warning-light text-warning">
+          <span class="material-icons-outlined">inventory_2</span>
+        </div>
+        <div class="metric-content">
+          <p class="metric-title">Low Stock Alert</p>
+          <p class="metric-value" [class.text-danger]="(inventoryStats?.lowStockItems ?? 0) > 0">
+            {{ inventoryStats?.lowStockItems ?? 0 }}
+          </p>
+          <p class="metric-sub">Items below reorder level</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Production Pipeline Summary -->
+    <div class="card mb-6" style="padding:1.25rem;margin-top:1.5rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+        <h3 class="font-semibold text-sm" style="display:flex;align-items:center;gap:0.4rem">
+          <span class="material-icons-outlined text-primary">analytics</span> Live Production Pipeline
+        </h3>
+        <a routerLink="/app/production" class="btn btn-ghost btn-sm">Open Kanban →</a>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:0.75rem">
+        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #f59e0b">
+          <span class="text-xs text-muted">WAITING</span>
+          <div class="text-lg font-bold">{{ productionStats?.pendingTasks ?? 0 }}</div>
+        </div>
+        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #3b82f6">
+          <span class="text-xs text-muted">PRINTING</span>
+          <div class="text-lg font-bold">{{ productionStats?.activeProduction ?? 0 }}</div>
+        </div>
+        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #ea580c">
+          <span class="text-xs text-muted">QUALITY CHECK</span>
+          <div class="text-lg font-bold">{{ productionStats?.qualityCheck ?? 0 }}</div>
+        </div>
+        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #0ea5e9">
+          <span class="text-xs text-muted">READY FOR DELIVERY</span>
+          <div class="text-lg font-bold">{{ productionStats?.readyForDelivery ?? 0 }}</div>
+        </div>
+        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #10b981">
+          <span class="text-xs text-muted">COMPLETED</span>
+          <div class="text-lg font-bold">{{ productionStats?.completedJobs ?? 0 }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions" style="margin-top:1.5rem">
+      <h2 class="section-title">Quick Actions</h2>
+      <div class="actions-grid">
+        <a routerLink="/app/orders" class="action-card">
+          <span class="material-icons-outlined action-icon">receipt_long</span>
+          <span class="action-label">Orders</span>
+        </a>
+        <a routerLink="/app/customers" class="action-card">
+          <span class="material-icons-outlined action-icon">groups</span>
+          <span class="action-label">Customers</span>
+        </a>
+        @if (authService.hasRole('admin', 'manager', 'design_staff')) {
+          <a routerLink="/app/designs" class="action-card">
+            <span class="material-icons-outlined action-icon">design_services</span>
+            <span class="action-label">Designs</span>
+          </a>
+        }
+        @if (authService.hasRole('admin', 'manager', 'production_staff')) {
+          <a routerLink="/app/production" class="action-card">
+            <span class="material-icons-outlined action-icon">precision_manufacturing</span>
+            <span class="action-label">Production</span>
+          </a>
+        }
+        @if (authService.hasRole('admin', 'manager', 'inventory_staff')) {
+          <a routerLink="/app/inventory" class="action-card">
+            <span class="material-icons-outlined action-icon">inventory_2</span>
+            <span class="action-label">Inventory</span>
+          </a>
+        }
+        @if (authService.hasRole('admin', 'manager', 'customer_service')) {
+          <a routerLink="/app/quotations" class="action-card">
+            <span class="material-icons-outlined action-icon">request_quote</span>
+            <span class="action-label">Quotations</span>
+          </a>
+        }
+        @if (authService.isAdminOrManager()) {
+          <a routerLink="/app/offers" class="action-card">
+            <span class="material-icons-outlined action-icon">local_offer</span>
+            <span class="action-label">Promotions</span>
+          </a>
+        }
+      </div>
+    </div>
+
+    <!-- Recent Orders -->
+    @if (recentOrders.length > 0) {
+      <div class="card" style="margin-top:1.75rem">
+        <div class="card-header">
+          <span>Recent Orders</span>
+          <a routerLink="/app/orders" class="btn btn-secondary btn-sm">View All Orders</a>
+        </div>
+        <div class="table-wrapper" style="border:none;border-radius:0 0 var(--radius-lg) var(--radius-lg)">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order #</th>
+                <th>Customer</th>
+                <th>Service</th>
+                <th>Quantity</th>
+                <th>Status</th>
+                <th>Date</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of recentOrders; track order.id || order.order_id) {
+                <tr>
+                  <td class="font-bold font-mono text-primary">#{{ (order.id || order.order_id)?.substring(0,8) }}</td>
+                  <td><strong>{{ order.customers?.users?.full_name || order.customer_name || 'Client' }}</strong></td>
+                  <td>{{ (order.service_type || order.serviceType)?.replace(/_/g, ' ') }}</td>
+                  <td>{{ order.quantity }}</td>
+                  <td><app-status-badge [status]="order.status || order.order_status"></app-status-badge></td>
+                  <td class="text-muted text-sm">{{ (order.created_at || order.order_date) | date:'MMM d, y' }}</td>
+                  <td>
+                    <a [routerLink]="'/app/orders/' + (order.id || order.order_id)" class="btn btn-ghost btn-sm">View</a>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+</div>

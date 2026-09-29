@@ -1,0 +1,222 @@
+<!-- Displays the customer list returned from the backend. -->
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Customers</h1>
+      <p>Manage all registered customers</p>
+    </div>
+    <div class="page-header-actions">
+      @if (authService.isAdminOrManager()) {
+        <a routerLink="/app/customers/new" [queryParams]="{ type: 'staff' }" class="btn btn-secondary">
+          <span class="material-icons-outlined">badge</span> New Staff Member
+        </a>
+      }
+      <button class="btn btn-primary" (click)="openCreateModal()">
+        <span class="material-icons-outlined">person_add</span> New Customer
+      </button>
+    </div>
+  </div>
+
+  <!-- Search Bar -->
+  <div class="actions-bar">
+    <div class="actions-bar-left">
+      <div class="search-input-wrapper" style="flex:1;max-width:360px">
+        <span class="material-icons-outlined search-icon">search</span>
+        <input
+          class="form-control"
+          type="text"
+          placeholder="Search by name, email, or company…"
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearch()" />
+      </div>
+    </div>
+    <div class="actions-bar-right">
+      <span class="text-muted text-sm">{{ total }} total</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (isLoading) {
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="skeleton skeleton-row"></div>
+      }
+    } @else if (customers.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon"><span class="material-icons-outlined">groups</span></div>
+        <h3>No customers found</h3>
+        <p>{{ searchTerm ? 'Try a different search term.' : 'Add your first customer to get started.' }}</p>
+        <button class="btn btn-primary" (click)="openCreateModal()">Add Customer</button>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Phone</th>
+            <th>Company</th>
+            <th>Status</th>
+            <th>Joined</th>
+            <th style="text-align: right;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (customer of customers; track (customer.id || customer.customer_id || $index)) {
+            <tr>
+              <td>
+                <a [routerLink]="['/app/customers', customer.id]" class="customer-name-cell customer-link">
+                  <div class="customer-avatar">{{ (customer.full_name || 'CU').substring(0,2).toUpperCase() }}</div>
+                  <span class="font-medium customer-name-text">{{ customer.full_name }}</span>
+                </a>
+              </td>
+              <td>{{ customer.email }}</td>
+              <td>{{ customer.phone || '—' }}</td>
+              <td>{{ customer.company || '—' }}</td>
+              <td>
+                @if (customer.is_active !== false) {
+                  <span class="badge badge-success">Active</span>
+                } @else {
+                  <span class="badge badge-neutral">Inactive</span>
+                }
+              </td>
+              <td class="text-muted text-sm">{{ (customer.created_at || customer.member_since) | date:'MMM d, y' }}</td>
+              <td class="table-actions" style="text-align: right;">
+                <div class="actions-group">
+                  <a [routerLink]="['/app/customers', customer.id]"
+                     class="btn btn-ghost btn-sm icon-btn"
+                     title="View Customer Details">
+                    <span class="material-icons-outlined">visibility</span>
+                  </a>
+                  <a [routerLink]="['/app/orders']" [queryParams]="{search: customer.email}"
+                     class="btn btn-secondary btn-sm">Orders</a>
+                  <button class="btn btn-ghost btn-sm icon-btn"
+                          (click)="openEditModal(customer)"
+                          title="Edit Customer">
+                    <span class="material-icons-outlined">edit</span>
+                  </button>
+                  <button class="btn btn-ghost btn-sm icon-btn text-danger"
+                          (click)="confirmDelete(customer)"
+                          title="Delete / Deactivate Customer">
+                    <span class="material-icons-outlined">delete_outline</span>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+
+      </table>
+
+      <!-- Pagination -->
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <span class="pagination-info">Showing {{ from }}–{{ to }} of {{ total }}</span>
+          <div class="pagination-controls">
+            <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="page === 1">
+              <span class="material-icons-outlined">chevron_left</span>
+            </button>
+            <span class="text-sm text-muted">{{ page }} / {{ totalPages }}</span>
+            <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="page === totalPages">
+              <span class="material-icons-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+</div>
+
+<!-- Customer Modal (Create & Edit) -->
+@if (showModal) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>{{ isEditing ? 'Edit Customer' : 'New Customer' }}</h2>
+        <button class="btn btn-ghost btn-sm icon-btn" (click)="closeModal()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <form [formGroup]="customerForm" (ngSubmit)="onSubmitModal()">
+        <div class="modal-body">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input class="form-control" formControlName="full_name" placeholder="e.g. Lasitha Rajapaksha" />
+              @if (customerForm.get('full_name')?.touched && customerForm.get('full_name')?.hasError('required')) {
+                <span class="form-error">Full name is required</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input class="form-control" type="email" formControlName="email" placeholder="client@example.com" />
+              @if (customerForm.get('email')?.touched && customerForm.get('email')?.hasError('required')) {
+                <span class="form-error">Email is required</span>
+              } @else if (customerForm.get('email')?.touched && customerForm.get('email')?.hasError('pattern')) {
+                <span class="form-error">Enter a valid email address</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input class="form-control" formControlName="phone" placeholder="+94 77 123 4567" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Company / Organization</label>
+              <input class="form-control" formControlName="company" placeholder="e.g. Apex Prints Ltd" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <input class="form-control" formControlName="address" placeholder="123 Main Street, City" />
+          </div>
+
+          @if (!isEditing) {
+            <div class="form-group">
+              <label class="form-label">Password (Optional)</label>
+              <input class="form-control" type="password" formControlName="password" placeholder="Leave empty for default (Customer@123)" />
+              <span class="text-xs text-muted" style="margin-top: 0.25rem; display: block;">
+                If left empty, temporary password <code>Customer@123</code> will be assigned.
+              </span>
+            </div>
+          }
+
+          @if (isEditing) {
+            <div class="form-group">
+              <label class="form-label">Account Status</label>
+              <select class="form-control" formControlName="is_active">
+                <option [ngValue]="true">Active</option>
+                <option [ngValue]="false">Inactive (Deactivated)</option>
+              </select>
+            </div>
+          }
+
+          <div class="form-group">
+            <label class="form-label">Notes & Preferences</label>
+            <textarea class="form-control" formControlName="notes" rows="2" placeholder="Delivery notes, corporate discounts, or special requirements..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeModal()" [disabled]="isSubmitting">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            @if (isSubmitting) {
+              <span>Saving...</span>
+            } @else {
+              <span>{{ isEditing ? 'Save Changes' : 'Create Customer' }}</span>
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+

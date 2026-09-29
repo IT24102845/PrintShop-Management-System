@@ -1,0 +1,817 @@
+<div class="page-container order-detail-page">
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="card card-body skeleton-container">
+      <div class="skeleton skeleton-title mb-4" style="width: 250px; height: 32px;"></div>
+      <div class="skeleton-grid">
+        <div class="skeleton" style="height: 180px; border-radius: 8px;"></div>
+        <div class="skeleton" style="height: 180px; border-radius: 8px;"></div>
+      </div>
+    </div>
+  }
+
+  <!-- Order Detail Content -->
+  @if (!isLoading && order) {
+
+    <!-- Overdue Alert Banner -->
+    @if (isDeadlineOverdue) {
+      <div class="alert-banner alert-warning">
+        <span class="material-icons-outlined">warning</span>
+        <div class="alert-text">
+          <strong>Production Attention Required:</strong>
+          This order passed its target deadline on {{ order.deadline_date | date:'mediumDate' }}.
+        </div>
+      </div>
+    }
+
+    <!-- Print-Only Supreme Advertising Brand Header -->
+    <div class="print-brand-banner">
+      <img src="/logo-transparent.png" alt="Supreme Advertising" class="print-brand-logo" />
+      <div class="print-brand-meta">
+        <span class="print-doc-title">Official Production Job Sheet</span>
+        <span class="print-doc-date">Generated: {{ order.created_at | date:'mediumDate' }}</span>
+      </div>
+    </div>
+
+    <!-- Page Header -->
+    <div class="page-header print-header">
+      <div class="header-left">
+        <div class="breadcrumbs">
+          <a [routerLink]="backRoute">Orders</a>
+          <span class="sep">/</span>
+          <span>#{{ order.id.substring(0, 8) }}</span>
+        </div>
+        <div class="title-row">
+          <h1>Order <span class="order-hash">#{{ order.id.substring(0, 8) }}</span></h1>
+          <button class="btn btn-ghost btn-xs copy-btn" (click)="copyOrderId()" title="Copy Full Order ID">
+            <span class="material-icons-outlined">content_copy</span>
+          </button>
+          <app-status-badge [status]="order.status"></app-status-badge>
+        </div>
+        <p class="order-meta">
+          <span>Submitted on {{ order.created_at | date:'MMMM d, y · h:mm a' }}</span>
+          @if (order.deadline_date) {
+            <span class="meta-sep">·</span>
+            <span [class.text-danger]="isDeadlineOverdue">
+              Deadline: {{ order.deadline_date | date:'MMMM d, y' }}
+              @if (!isDeadlineOverdue && daysUntilDeadline >= 0) {
+                ({{ daysUntilDeadline }} days left)
+              }
+            </span>
+          }
+        </p>
+      </div>
+
+      <div class="header-actions no-print">
+        <button class="btn btn-outline" (click)="printOrder()">
+          <span class="material-icons-outlined">print</span> Print Job Sheet
+        </button>
+        <a [routerLink]="backRoute" class="btn btn-secondary">
+          <span class="material-icons-outlined">arrow_back</span> Back to Orders
+        </a>
+      </div>
+    </div>
+
+    <!-- Staff Status Control Toolbar -->
+    @if (isStaff()) {
+      <div class="card status-toolbar no-print">
+        <div class="toolbar-label">
+          <span class="material-icons-outlined">tune</span>
+          <span>Order Workflow Status:</span>
+        </div>
+        <div class="toolbar-controls">
+          <select class="form-select status-select" [(ngModel)]="selectedStatus">
+            @for (s of orderStatuses; track s) {
+              <option [value]="s">{{ s.replace('_', ' ') | titlecase }}</option>
+            }
+          </select>
+          <button
+            class="btn btn-primary btn-sm"
+            (click)="updateStatus()"
+            [disabled]="isUpdating || selectedStatus === order.status">
+            {{ isUpdating ? 'Saving...' : 'Update Status' }}
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Main Grid -->
+    <div class="order-layout-grid">
+
+      <!-- LEFT COLUMN (Specs, Quotations, Production) -->
+      <div class="col-left">
+
+        <!-- SECTION 1: Order Specifications -->
+        <div class="card order-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="material-icons-outlined card-icon">description</span>
+              <h2>Job Specifications</h2>
+            </div>
+            <span class="badge badge-service">{{ order.service_type?.replace('_', ' ') | titlecase }}</span>
+          </div>
+          <div class="card-body">
+            <dl class="specs-grid">
+              <div class="spec-item">
+                <dt>Quantity</dt>
+                <dd class="font-bold highlight-value">{{ order.quantity }} units</dd>
+              </div>
+              <div class="spec-item">
+                <dt>Service Type</dt>
+                <dd>{{ order.service_type?.replace('_', ' ') | titlecase }}</dd>
+              </div>
+              <div class="spec-item">
+                <dt>Dimensions / Size</dt>
+                <dd>{{ order.size || 'Standard Specifications' }}</dd>
+              </div>
+              <div class="spec-item">
+                <dt>Colour Specs</dt>
+                <dd>{{ order.colour || 'Standard CMYK' }}</dd>
+              </div>
+              <div class="spec-item">
+                <dt>Material / Stock</dt>
+                <dd>{{ order.material || 'Standard Print Stock' }}</dd>
+              </div>
+              <div class="spec-item">
+                <dt>Target Deadline</dt>
+                <dd [class.text-danger]="isDeadlineOverdue">
+                  {{ order.deadline_date ? (order.deadline_date | date:'mediumDate') : 'No deadline set' }}
+                </dd>
+              </div>
+            </dl>
+
+            <div class="spec-description">
+              <span class="spec-label">Job Description:</span>
+              <p>{{ order.description || 'No detailed description provided.' }}</p>
+            </div>
+
+            @if (order.special_notes) {
+              <div class="spec-notes">
+                <span class="spec-label">Special Production Notes:</span>
+                <p>{{ order.special_notes }}</p>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- SECTION 2: Production Pipeline -->
+        <div class="card order-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="material-icons-outlined card-icon">precision_manufacturing</span>
+              <h2>Production Status</h2>
+            </div>
+            @if (activeProductionTask) {
+              <app-status-badge [status]="activeProductionTask.status"></app-status-badge>
+            } @else {
+              <span class="badge badge-neutral">Not Queued</span>
+            }
+          </div>
+          <div class="card-body">
+
+            <!-- 5-Stage Stepper -->
+            <div class="stepper-container">
+              <div class="stepper-step" [class.completed]="productionStepIndex > 1" [class.active]="productionStepIndex === 1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Waiting</div>
+              </div>
+              <div class="stepper-line" [class.completed]="productionStepIndex > 1"></div>
+
+              <div class="stepper-step" [class.completed]="productionStepIndex > 2" [class.active]="productionStepIndex === 2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Printing</div>
+              </div>
+              <div class="stepper-line" [class.completed]="productionStepIndex > 2"></div>
+
+              <div class="stepper-step" [class.completed]="productionStepIndex > 3" [class.active]="productionStepIndex === 3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Quality Check</div>
+              </div>
+              <div class="stepper-line" [class.completed]="productionStepIndex > 3"></div>
+
+              <div class="stepper-step" [class.completed]="productionStepIndex > 4" [class.active]="productionStepIndex === 4">
+                <div class="step-circle">4</div>
+                <div class="step-label">Ready</div>
+              </div>
+              <div class="stepper-line" [class.completed]="productionStepIndex > 4"></div>
+
+              <div class="stepper-step" [class.completed]="productionStepIndex === 5" [class.active]="productionStepIndex === 5">
+                <div class="step-circle">5</div>
+                <div class="step-label">Completed</div>
+              </div>
+            </div>
+
+            @if (activeProductionTask) {
+              <div class="task-details-box">
+                <div class="task-row">
+                  <span class="detail-label">Assigned Operator:</span>
+                  <span class="detail-value font-medium">
+                    {{ activeProductionTask.employees?.users?.full_name || 'Floor Assignment Pending' }}
+                  </span>
+                </div>
+                <div class="task-row">
+                  <span class="detail-label">Job Priority:</span>
+                  <span class="detail-value priority-tag" [attr.data-priority]="activeProductionTask.priority">
+                    {{ activeProductionTask.priority | uppercase }}
+                  </span>
+                </div>
+                <div class="task-row">
+                  <span class="detail-label">Production Started:</span>
+                  <span class="detail-value">
+                    {{ activeProductionTask.started_at ? (activeProductionTask.started_at | date:'medium') : 'Awaiting start' }}
+                  </span>
+                </div>
+                @if (activeProductionTask.completed_at) {
+                  <div class="task-row">
+                    <span class="detail-label">Finished At:</span>
+                    <span class="detail-value text-success font-medium">
+                      {{ activeProductionTask.completed_at | date:'medium' }}
+                    </span>
+                  </div>
+                }
+              </div>
+
+              <!-- Staff Production Controls -->
+              @if (canManageProduction() && activeProductionTask.status !== 'COMPLETED' && activeProductionTask.status !== 'FAILED') {
+                <div class="production-actions no-print">
+                  <button class="btn btn-primary" (click)="advanceProduction()" [disabled]="isUpdating">
+                    <span class="material-icons-outlined">fast_forward</span>
+                    @if (activeProductionTask.status === 'WAITING') { Start Printing Job }
+                    @else if (activeProductionTask.status === 'PRINTING') { Send to Quality Check }
+                    @else if (activeProductionTask.status === 'QUALITY_CHECK') { Mark Ready for Delivery }
+                    @else if (activeProductionTask.status === 'READY_FOR_DELIVERY') { Complete Production Job }
+                  </button>
+                </div>
+              }
+            } @else {
+              <div class="empty-production-box">
+                <p class="text-muted">No active production job queued yet.</p>
+                @if (canManageProduction()) {
+                  @if (isDesignApproved || order.status === 'confirmed' || order.status === 'in_production') {
+                    <button class="btn btn-primary btn-sm mt-2" (click)="openCreateTaskModal()">
+                      <span class="material-icons-outlined">add_task</span> Create Production Task
+                    </button>
+                  } @else {
+                    <p class="text-hint">Production queue unlocks once order is confirmed or design proof is approved.</p>
+                  }
+                }
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <!-- SECTION 3: Quotation & Commercial Summary (Read-Only Reference) -->
+        @if (order.quotations?.length || (isCustomer() && latestQuotation)) {
+          <div class="card order-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="material-icons-outlined card-icon">request_quote</span>
+                <h2>Quotation & Pricing</h2>
+              </div>
+              @if (isStaff()) {
+                <a [routerLink]="['/app/quotations/new']" [queryParams]="{ order_id: order.id }" class="btn btn-outline btn-xs no-print">
+                  <span class="material-icons-outlined">add</span> Create Quotation
+                </a>
+              }
+            </div>
+            <div class="card-body">
+
+              <!-- Customer Action Banner if quotation sent -->
+              @if (isCustomer() && latestQuotation && latestQuotation.status === 'sent') {
+                <div class="action-banner action-banner-quote">
+                  <div class="banner-text">
+                    <h3>Quotation Ready for Approval</h3>
+                    <p>Amount: <strong>{{ latestQuotation.amount | currency:'LKR ':'symbol':'1.2-2' }}</strong> (Revision {{ latestQuotation.revision }})</p>
+                    @if (latestQuotation.valid_until) {
+                      <p class="text-xs text-muted">Valid until: {{ latestQuotation.valid_until | date:'mediumDate' }}</p>
+                    }
+                  </div>
+                  <div class="banner-actions">
+                    <button class="btn btn-success" (click)="acceptQuotation(latestQuotation.id)">
+                      <span class="material-icons-outlined">check</span> Accept Quote
+                    </button>
+                    <button class="btn btn-ghost text-danger" (click)="rejectQuotation(latestQuotation.id)">
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              }
+
+              <!-- Quotations List -->
+              @if (order.quotations?.length) {
+                <div class="quote-history">
+                  @for (q of order.quotations; track q.id) {
+                    <div class="quote-card" [class.quote-card-active]="q.status === 'accepted' || (q.status === 'sent' && !acceptedQuotation)">
+                      <div class="quote-main">
+                        <div class="quote-sum">
+                          <span class="quote-rev-badge">Rev {{ q.revision }}</span>
+                          <span class="quote-price">{{ q.amount | currency:'LKR ':'symbol':'1.2-2' }}</span>
+                        </div>
+                        <app-status-badge [status]="q.status"></app-status-badge>
+                      </div>
+                      <div class="quote-details">
+                        <span>Generated {{ q.created_at | date:'mediumDate' }}</span>
+                        @if (q.valid_until) {
+                          <span>· Valid to {{ q.valid_until | date:'mediumDate' }}</span>
+                        }
+                      </div>
+                      @if (q.notes) {
+                        <p class="quote-notes">{{ q.notes }}</p>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+
+            </div>
+          </div>
+        }
+
+      </div>
+
+      <!-- RIGHT COLUMN (Customer, Artwork, Proofs, Payments) -->
+      <div class="col-right">
+
+        <!-- Customer Profile Card (Staff Only) -->
+        @if (isStaff() && order.customers) {
+          <div class="card order-card">
+            <div class="card-header">
+              <div class="card-title-group">
+                <span class="material-icons-outlined card-icon">business</span>
+                <h2>Client Details</h2>
+              </div>
+            </div>
+            <div class="card-body">
+              <div class="client-profile">
+                <div class="client-avatar">
+                  {{ (order.customers.users?.full_name || 'C').substring(0, 2).toUpperCase() }}
+                </div>
+                <div class="client-info">
+                  <h3 class="client-name">{{ order.customers.users?.full_name || 'Unnamed Client' }}</h3>
+                  @if (order.customers.company) {
+                    <p class="client-company">{{ order.customers.company }}</p>
+                  }
+                  <p class="client-contact">
+                    <span class="material-icons-outlined">email</span>
+                    <a [href]="'mailto:' + order.customers.users?.email">{{ order.customers.users?.email }}</a>
+                  </p>
+                  @if (order.customers.phone) {
+                    <p class="client-contact">
+                      <span class="material-icons-outlined">phone</span>
+                      <a [href]="'tel:' + order.customers.phone">{{ order.customers.phone }}</a>
+                    </p>
+                  }
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- SECTION 4: Artwork & Initial Files -->
+        <div class="card order-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="material-icons-outlined card-icon">attach_file</span>
+              <h2>Client Artwork</h2>
+              @if (order.design_file_url) {
+                <span class="badge badge-subtle badge-success text-xs ml-2">Client Uploaded</span>
+              }
+            </div>
+            <div class="header-actions no-print">
+              <input #artworkFileInput type="file" accept=".pdf,.png,.jpg,.jpeg,.svg,.ai,.psd" style="display:none" (change)="onUploadArtwork($event)" />
+
+              <!-- Customer can upload or replace their own artwork -->
+              @if (isCustomer()) {
+                <button class="btn btn-outline btn-xs" (click)="artworkFileInput.click()" [disabled]="isUploadingArtwork">
+                  <span class="material-icons-outlined">{{ isUploadingArtwork ? 'hourglass_top' : 'cloud_upload' }}</span>
+                  {{ isUploadingArtwork ? 'Uploading...' : (order.design_file_url ? 'Replace My Artwork' : 'Upload Artwork') }}
+                </button>
+              } @else if (!order.design_file_url) {
+                <!-- Staff can only attach if order currently has no initial artwork -->
+                <button class="btn btn-outline btn-xs" (click)="artworkFileInput.click()" [disabled]="isUploadingArtwork">
+                  <span class="material-icons-outlined">{{ isUploadingArtwork ? 'hourglass_top' : 'cloud_upload' }}</span>
+                  {{ isUploadingArtwork ? 'Uploading...' : 'Attach Client Artwork' }}
+                </button>
+              } @else {
+                <!-- Staff view: Customer artwork is protected and cannot be directly replaced -->
+                <span class="badge badge-subtle badge-secondary text-xs" title="Customer artwork is protected. To provide revisions or print files, upload a design proof below.">
+                  <span class="material-icons-outlined text-xs" style="font-size: 14px; vertical-align: -2px;">lock</span> Client Original (Protected)
+                </span>
+              }
+            </div>
+          </div>
+          <div class="card-body">
+            @if (isUploadingArtwork) {
+              <div class="p-4 text-center">
+                <div class="spinner spinner-sm mb-2" style="display:inline-block"></div>
+                <p class="text-sm font-medium">Uploading artwork to cloud storage ({{ artworkUploadProgress }}%)...</p>
+                <div style="height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; max-width: 280px; margin: 8px auto 0;">
+                  <div [style.width.%]="artworkUploadProgress" style="height: 100%; background: #3b82f6; transition: width 0.2s;"></div>
+                </div>
+              </div>
+            } @else if (order.design_file_url) {
+              <div class="artwork-preview-box">
+                @if (isArtworkImage) {
+                  <div class="artwork-thumbnail" (click)="openImagePreview(order.design_file_url)">
+                    <img [src]="order.design_file_url" alt="Client Artwork" />
+                    <div class="artwork-overlay">
+                      <span class="material-icons-outlined">zoom_in</span> Click to Enlarge
+                    </div>
+                  </div>
+                } @else {
+                  <div class="doc-preview">
+                    <span class="material-icons-outlined doc-icon">picture_as_pdf</span>
+                    <div class="doc-info">
+                      <span class="doc-name">{{ artworkFileName }}</span>
+                      <span class="doc-hint">Vector / Document Asset</span>
+                    </div>
+                  </div>
+                }
+
+                <div class="artwork-actions no-print">
+                  <a [href]="order.design_file_url" target="_blank" download class="btn btn-outline btn-sm">
+                    <span class="material-icons-outlined">open_in_new</span> Open / Download File
+                  </a>
+                  @if (isStaff()) {
+                    <span class="text-xs text-muted" style="margin-left: auto;">
+                      To provide modified or print-ready versions, use <strong>Upload Proof</strong> below.
+                    </span>
+                  }
+                </div>
+              </div>
+            } @else {
+              <div class="empty-state-mini">
+                <span class="material-icons-outlined">cloud_off</span>
+                <p>No initial artwork file attached by the client.</p>
+                <button class="btn btn-primary btn-sm mt-3" (click)="artworkFileInput.click()">
+                  <span class="material-icons-outlined">add_photo_alternate</span>
+                  {{ isCustomer() ? 'Upload Artwork Now' : 'Attach Client Artwork Now' }}
+                </button>
+              </div>
+            }
+          </div>
+        </div>
+
+
+
+        <!-- SECTION 5: Design Proofs & Approvals -->
+        <div class="card order-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="material-icons-outlined card-icon">design_services</span>
+              <h2>Design Proofs</h2>
+            </div>
+            @if (canManageDesigns()) {
+              <button class="btn btn-outline btn-xs no-print" (click)="openUploadProofModal()">
+                <span class="material-icons-outlined">cloud_upload</span> Upload Proof
+              </button>
+            }
+          </div>
+          <div class="card-body">
+
+            <!-- Customer Proof Approval Action Banner -->
+            @if (isCustomer() && latestDesign && (latestDesign.approval_status === 'pending' || latestDesign.approval_status === 'under_review')) {
+              <div class="action-banner action-banner-design">
+                <div class="banner-text">
+                  <h3>Proof Ready for Review (v{{ latestDesign.version }})</h3>
+                  <p>Please inspect the proof carefully before confirming production approval.</p>
+                </div>
+                <div class="banner-actions">
+                  <button class="btn btn-success" (click)="approveProof(latestDesign.id)">
+                    <span class="material-icons-outlined">check_circle</span> Approve Proof
+                  </button>
+                  <button class="btn btn-outline" (click)="openRevisionModal()">
+                    <span class="material-icons-outlined">edit_note</span> Request Revision
+                  </button>
+                </div>
+              </div>
+            }
+
+            <!-- Proof History List -->
+            @if (order.designs?.length) {
+              <div class="proofs-list">
+                @for (d of order.designs; track d.id) {
+                  <div class="proof-card" [class.proof-card-approved]="d.approval_status === 'approved'">
+                    <div class="proof-header">
+                      <div class="proof-title">
+                        <span class="proof-ver">v{{ d.version }}</span>
+                        <span class="proof-date">{{ d.created_at | date:'mediumDate' }}</span>
+                      </div>
+                      <app-status-badge [status]="d.approval_status"></app-status-badge>
+                    </div>
+
+                    <div class="proof-body">
+                      @if (d.file_url) {
+                        <div class="proof-thumb" (click)="openImagePreview(d.file_url)">
+                          <img [src]="d.file_url" alt="Proof Thumbnail" />
+                          <span class="thumb-hint"><span class="material-icons-outlined">zoom_in</span> View Proof</span>
+                        </div>
+                      }
+                      @if (d.remarks) {
+                        <p class="proof-remarks"><strong>Notes:</strong> {{ d.remarks }}</p>
+                      }
+                    </div>
+
+                    <div class="proof-footer no-print">
+                      <a [href]="d.file_url" target="_blank" class="proof-link">
+                        <span class="material-icons-outlined">download</span> Download Proof
+                      </a>
+                    </div>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state-mini">
+                <span class="material-icons-outlined">imagesmode</span>
+                <p>No design proofs uploaded yet. The design team will upload a proof soon.</p>
+              </div>
+            }
+
+          </div>
+        </div>
+
+        <!-- SECTION 6: Financials & Payments -->
+        <div class="card order-card">
+          <div class="card-header">
+            <div class="card-title-group">
+              <span class="material-icons-outlined card-icon">payments</span>
+              <h2>Financials & Payments</h2>
+            </div>
+            @if (isStaff()) {
+              <button class="btn btn-outline btn-xs no-print" (click)="openRecordPaymentModal()">
+                <span class="material-icons-outlined">add</span> Record Payment
+              </button>
+            }
+          </div>
+          <div class="card-body">
+
+            <!-- Summary KPI Pill Grid -->
+            <div class="finance-summary-grid">
+              <div class="finance-pill">
+                <span class="pill-title">Quoted Total</span>
+                <span class="pill-amount">{{ quotedAmount | currency:'LKR ':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="finance-pill">
+                <span class="pill-title">Total Paid</span>
+                <span class="pill-amount text-success">{{ totalPaid | currency:'LKR ':'symbol':'1.2-2' }}</span>
+              </div>
+              <div class="finance-pill" [class.pill-danger]="balanceDue > 0">
+                <span class="pill-title">Balance Due</span>
+                <span class="pill-amount">{{ balanceDue | currency:'LKR ':'symbol':'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <!-- Payments List -->
+            @if (order.payments?.length) {
+              <div class="payments-table-container">
+                <table class="table-compact">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Method</th>
+                      <th>Reference</th>
+                      <th>Status</th>
+                      <th style="text-align: right;">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of order.payments; track p.id) {
+                      <tr>
+                        <td>{{ p.paid_at || p.created_at | date:'MMM d, y' }}</td>
+                        <td><span class="method-tag">{{ p.payment_method?.replace('_', ' ') | titlecase }}</span></td>
+                        <td>{{ p.transaction_ref || '—' }}</td>
+                        <td><app-status-badge [status]="p.payment_status"></app-status-badge></td>
+                        <td style="text-align: right;" class="font-bold">
+                          {{ p.amount | currency:'LKR ':'symbol':'1.2-2' }}
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            } @else {
+              <div class="empty-state-mini">
+                <span class="material-icons-outlined">credit_card_off</span>
+                <p>No payment records found for this order.</p>
+              </div>
+            }
+
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  }
+
+  <!-- Order Not Found -->
+  @if (!isLoading && !order) {
+    <div class="empty-state">
+      <div class="empty-icon"><span class="material-icons-outlined">error_outline</span></div>
+      <h3>Order Not Found</h3>
+      <p>The requested order does not exist or you do not have permission to view it.</p>
+      <a [routerLink]="backRoute" class="btn btn-primary">Return to Orders</a>
+    </div>
+  }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════════
+     MODALS & DIALOGS
+══════════════════════════════════════════════════════════════════════════════ -->
+
+<!-- MODAL 1: Create Quotation (Staff) -->
+@if (showQuoteModal()) {
+  <div class="modal-overlay" (click)="showQuoteModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Create Quotation for Client</h3>
+        <button class="modal-close" (click)="showQuoteModal.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label class="form-label">Quoted Amount (LKR) *</label>
+          <input type="number" class="form-input" [(ngModel)]="quoteForm.amount" min="1" step="50" placeholder="e.g. 15000" />
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Valid Until</label>
+          <input type="date" class="form-input" [(ngModel)]="quoteForm.valid_until" />
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Commercial Notes & Specifications</label>
+          <textarea class="form-input" rows="3" [(ngModel)]="quoteForm.notes" placeholder="e.g. Includes lamination, die-cutting, delivery included"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showQuoteModal.set(false)">Cancel</button>
+        <button class="btn btn-primary" (click)="submitQuotation()" [disabled]="isSubmittingQuote || quoteForm.amount <= 0">
+          {{ isSubmittingQuote ? 'Submitting...' : 'Send Quotation' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 2: Upload Proof (Design Staff) -->
+@if (showProofModal()) {
+  <div class="modal-overlay" (click)="showProofModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Upload Design Proof</h3>
+        <button class="modal-close" (click)="showProofModal.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label class="form-label">Upload Proof File</label>
+          <app-file-upload
+            folder="proofs"
+            (fileUploaded)="onProofFileUploaded($event)">
+          </app-file-upload>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Or Direct File URL</label>
+          <input type="text" class="form-input" [(ngModel)]="proofForm.file_url" placeholder="https://..." />
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Design Notes / Revision Remarks</label>
+          <textarea class="form-input" rows="2" [(ngModel)]="proofForm.remarks" placeholder="Notes for the customer reviewing this proof..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showProofModal.set(false)">Cancel</button>
+        <button class="btn btn-primary" (click)="submitProof()" [disabled]="isSubmittingProof || !proofForm.file_url">
+          {{ isSubmittingProof ? 'Uploading...' : 'Publish Proof' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 3: Request Revision (Customer) -->
+@if (showRevisionModal()) {
+  <div class="modal-overlay" (click)="showRevisionModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Request Design Changes</h3>
+        <button class="modal-close" (click)="showRevisionModal.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="text-sm text-muted mb-3">
+          Please explain what adjustments or corrections are needed before you can approve the artwork.
+        </p>
+        <div class="form-group mb-3">
+          <label class="form-label">Requested Changes *</label>
+          <textarea class="form-input" rows="4" [(ngModel)]="revisionRemarks" placeholder="e.g. Please change background color to dark navy and increase logo size by 10%"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showRevisionModal.set(false)">Cancel</button>
+        <button class="btn btn-primary" (click)="submitRevision()" [disabled]="isSubmittingRevision || !revisionRemarks.trim()">
+          {{ isSubmittingRevision ? 'Sending...' : 'Submit Request' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 4: Record Payment (Staff) -->
+@if (showPaymentModal()) {
+  <div class="modal-overlay" (click)="showPaymentModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Record Customer Payment</h3>
+        <button class="modal-close" (click)="showPaymentModal.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label class="form-label">Amount (LKR) *</label>
+          <input type="number" class="form-input" [(ngModel)]="paymentForm.amount" min="1" step="100" />
+          <small class="text-muted">Balance Due: {{ balanceDue | currency:'LKR ':'symbol':'1.2-2' }}</small>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Payment Method *</label>
+          <select class="form-select" [(ngModel)]="paymentForm.payment_method">
+            <option value="cash">Cash</option>
+            <option value="bank_transfer">Bank Transfer</option>
+            <option value="card">Credit / Debit Card</option>
+            <option value="online">Online Payment</option>
+            <option value="cheque">Cheque</option>
+            <option value="mobile_money">Mobile Money</option>
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Payment Status</label>
+          <select class="form-select" [(ngModel)]="paymentForm.payment_status">
+            <option value="completed">Completed</option>
+            <option value="pending">Pending Confirmation</option>
+            <option value="processing">Processing</option>
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Transaction Reference</label>
+          <input type="text" class="form-input" [(ngModel)]="paymentForm.transaction_ref" placeholder="Bank slip #, POS auth code, etc." />
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Payment Notes</label>
+          <input type="text" class="form-input" [(ngModel)]="paymentForm.notes" placeholder="Optional notes" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showPaymentModal.set(false)">Cancel</button>
+        <button class="btn btn-primary" (click)="submitPayment()" [disabled]="isSubmittingPayment || paymentForm.amount <= 0">
+          {{ isSubmittingPayment ? 'Recording...' : 'Save Payment' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- MODAL 5: Create Production Task (Staff) -->
+@if (showProductionModal()) {
+  <div class="modal-overlay" (click)="showProductionModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Queue Production Job</h3>
+        <button class="modal-close" (click)="showProductionModal.set(false)">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group mb-3">
+          <label class="form-label">Priority</label>
+          <select class="form-select" [(ngModel)]="productionForm.priority">
+            <option value="low">Low</option>
+            <option value="normal">Normal</option>
+            <option value="high">High</option>
+            <option value="urgent">Urgent</option>
+          </select>
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Estimated Machine Hours</label>
+          <input type="number" class="form-input" [(ngModel)]="productionForm.estimated_hours" min="0.5" step="0.5" />
+        </div>
+        <div class="form-group mb-3">
+          <label class="form-label">Production Floor Notes</label>
+          <textarea class="form-input" rows="3" [(ngModel)]="productionForm.notes" placeholder="Specific printing or finishing instructions for operators..."></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="showProductionModal.set(false)">Cancel</button>
+        <button class="btn btn-primary" (click)="submitCreateTask()" [disabled]="isSubmittingProduction">
+          {{ isSubmittingProduction ? 'Queuing...' : 'Add to Production Queue' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- LIGHTBOX: Image Preview Modal -->
+@if (previewImageUrl()) {
+  <div class="lightbox-overlay" (click)="closeImagePreview()">
+    <div class="lightbox-content" (click)="$event.stopPropagation()">
+      <button class="lightbox-close" (click)="closeImagePreview()">✕</button>
+      <img [src]="previewImageUrl()" alt="Artwork Enqueue" />
+    </div>
+  </div>
+}

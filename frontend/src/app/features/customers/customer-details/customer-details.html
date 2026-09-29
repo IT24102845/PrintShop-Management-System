@@ -1,0 +1,325 @@
+<div class="page-container">
+  <!-- Back link -->
+  <div class="navigation-bar">
+    <a routerLink="/app/customers" class="back-link">
+      <span class="material-icons-outlined">arrow_back</span>
+      <span>Back to Customers</span>
+    </a>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-state">
+      <div class="skeleton skeleton-header"></div>
+      <div class="skeleton skeleton-body"></div>
+    </div>
+  } @else if (!customer) {
+    <div class="empty-state">
+      <div class="empty-icon"><span class="material-icons-outlined">error_outline</span></div>
+      <h3>Customer Not Found</h3>
+      <p>The requested customer profile could not be located.</p>
+      <a routerLink="/app/customers" class="btn btn-primary">Return to Customers</a>
+    </div>
+  } @else {
+    <!-- Customer Header Profile Card -->
+    <div class="customer-header-card">
+      <div class="customer-header-left">
+        <div class="large-avatar">
+          {{ (customer.full_name || 'CU').substring(0,2).toUpperCase() }}
+        </div>
+        <div class="customer-title-block">
+          <div class="customer-name-row">
+            <h2>{{ customer.full_name }}</h2>
+            @if (customer.is_active !== false) {
+              <span class="badge badge-success">Active</span>
+            } @else {
+              <span class="badge badge-neutral">Inactive</span>
+            }
+          </div>
+          <div class="customer-meta-row">
+            @if (customer.company) {
+              <span class="meta-item">
+                <span class="material-icons-outlined">business</span>
+                {{ customer.company }}
+              </span>
+            }
+            <span class="meta-item">
+              <span class="material-icons-outlined">email</span>
+              <a [href]="'mailto:' + customer.email">{{ customer.email }}</a>
+            </span>
+            @if (customer.phone) {
+              <span class="meta-item">
+                <span class="material-icons-outlined">phone</span>
+                <a [href]="'tel:' + customer.phone">{{ customer.phone }}</a>
+              </span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="customer-header-actions">
+        <a [routerLink]="['/app/orders/new']" [queryParams]="{ customer_id: customer.customer_id || customer.id }" class="btn btn-primary btn-sm">
+          <span class="material-icons-outlined">add_shopping_cart</span> New Order
+        </a>
+        <button class="btn btn-secondary btn-sm" (click)="openEditModal()">
+          <span class="material-icons-outlined">edit</span> Edit Profile
+        </button>
+        <button class="btn btn-secondary btn-sm" (click)="toggleActive()">
+          {{ customer.is_active !== false ? 'Deactivate' : 'Activate' }}
+        </button>
+        <button class="btn btn-ghost btn-sm text-danger" (click)="confirmDelete()" title="Delete Customer">
+          <span class="material-icons-outlined">delete_outline</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Quick Stats Bar -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-icon bg-blue-subtle">
+          <span class="material-icons-outlined">receipt_long</span>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Total Orders</span>
+          <span class="stat-val">{{ customer.total_orders || (customer.recent_orders?.length ?? 0) }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon bg-green-subtle">
+          <span class="material-icons-outlined">verified_user</span>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Account Status</span>
+          <span class="stat-val" [ngClass]="customer.is_active !== false ? 'text-success' : 'text-muted'">
+            {{ customer.is_active !== false ? 'Active' : 'Deactivated' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon bg-purple-subtle">
+          <span class="material-icons-outlined">calendar_today</span>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Customer Since</span>
+          <span class="stat-val text-sm">{{ (customer.created_at || customer.member_since) | date:'mediumDate' }}</span>
+        </div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-icon bg-amber-subtle">
+          <span class="material-icons-outlined">login</span>
+        </div>
+        <div class="stat-content">
+          <span class="stat-label">Last Login</span>
+          <span class="stat-val text-sm">{{ customer.last_login_at ? (customer.last_login_at | date:'mediumDate') : 'Never' }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content Details Grid -->
+    <div class="details-grid">
+      <!-- Left Column: Information Cards -->
+      <div class="details-left">
+        <!-- Contact Information Card -->
+        <div class="card detail-card">
+          <div class="card-header">
+            <h3>Contact & Account Information</h3>
+            <button class="btn btn-ghost btn-sm" (click)="openEditModal()">
+              <span class="material-icons-outlined">edit</span>
+            </button>
+          </div>
+          <div class="card-body">
+            <div class="info-list">
+              <div class="info-row">
+                <span class="info-label">Full Name</span>
+                <span class="info-value font-medium">{{ customer.full_name }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email Address</span>
+                <span class="info-value">
+                  <a [href]="'mailto:' + customer.email">{{ customer.email }}</a>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Phone</span>
+                <span class="info-value">{{ customer.phone || 'Not provided' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Company</span>
+                <span class="info-value">{{ customer.company || 'Not provided' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Address</span>
+                <span class="info-value">{{ customer.address || 'Not provided' }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Customer ID</span>
+                <span class="info-value text-xs text-muted font-mono">{{ customer.customer_id || customer.id }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Internal Notes Card -->
+        <div class="card detail-card">
+          <div class="card-header">
+            <h3>Notes & Preferences</h3>
+          </div>
+          <div class="card-body">
+            @if (customer.notes) {
+              <p class="notes-text">{{ customer.notes }}</p>
+            } @else {
+              <p class="text-muted text-sm italic">No notes recorded for this customer.</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Order History -->
+      <div class="details-right">
+        <div class="card detail-card">
+          <div class="card-header">
+            <div class="card-header-left">
+              <h3>Order History</h3>
+              <span class="badge badge-neutral text-xs">
+                {{ customer.recent_orders?.length || 0 }} recent
+              </span>
+            </div>
+            <a [routerLink]="['/app/orders']" [queryParams]="{ search: customer.email }" class="btn btn-ghost btn-sm">
+              View All Orders
+            </a>
+          </div>
+          <div class="card-body p-0">
+            @if (!customer.recent_orders || customer.recent_orders.length === 0) {
+              <div class="empty-order-state">
+                <span class="material-icons-outlined empty-order-icon">shopping_cart</span>
+                <h4>No orders placed yet</h4>
+                <p class="text-sm text-muted">This customer hasn't placed any orders in the system.</p>
+                <a [routerLink]="['/app/orders/new']" [queryParams]="{ customer_id: customer.customer_id || customer.id }" class="btn btn-secondary btn-sm">
+                  Create Order for {{ customer.full_name }}
+                </a>
+              </div>
+            } @else {
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Order</th>
+                    <th>Service</th>
+                    <th>Qty</th>
+                    <th>Status</th>
+                    <th>Date</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (order of customer.recent_orders; track order.id) {
+                    <tr>
+                      <td class="font-mono text-xs">
+                        #{{ order.id.substring(0, 8) }}
+                      </td>
+                      <td class="font-medium text-capitalize">
+                        {{ order.service_type?.replaceAll('_', ' ') }}
+                      </td>
+                      <td>{{ order.quantity }}</td>
+                      <td>
+                        <span class="badge" [ngClass]="getStatusBadgeClass(order.status)">
+                          {{ order.status?.replaceAll('_', ' ') }}
+                        </span>
+                      </td>
+                      <td class="text-muted text-xs">
+                        {{ order.created_at | date:'MMM d, y' }}
+                      </td>
+                      <td>
+                        <a [routerLink]="['/app/orders', order.id]" class="btn btn-ghost btn-sm icon-btn" title="View Order">
+                          <span class="material-icons-outlined">arrow_forward</span>
+                        </a>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Edit Customer Modal -->
+@if (showEditModal) {
+  <div class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>Edit Customer Profile</h2>
+        <button class="btn btn-ghost btn-sm icon-btn" (click)="closeEditModal()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <form [formGroup]="editForm" (ngSubmit)="onSubmitEdit()">
+        <div class="modal-body">
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input class="form-control" formControlName="full_name" placeholder="e.g. Lasitha Rajapaksha" />
+              @if (editForm.get('full_name')?.touched && editForm.get('full_name')?.hasError('required')) {
+                <span class="form-error">Full name is required</span>
+              }
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Email Address *</label>
+              <input class="form-control" type="email" formControlName="email" placeholder="client@example.com" />
+              @if (editForm.get('email')?.touched && editForm.get('email')?.hasError('required')) {
+                <span class="form-error">Email is required</span>
+              } @else if (editForm.get('email')?.touched && editForm.get('email')?.hasError('pattern')) {
+                <span class="form-error">Enter a valid email address</span>
+              }
+            </div>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Phone Number</label>
+              <input class="form-control" formControlName="phone" placeholder="+94 77 123 4567" />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Company / Organization</label>
+              <input class="form-control" formControlName="company" placeholder="e.g. Apex Prints Ltd" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Address</label>
+            <input class="form-control" formControlName="address" placeholder="123 Main Street, City" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Account Status</label>
+            <select class="form-control" formControlName="is_active">
+              <option [ngValue]="true">Active</option>
+              <option [ngValue]="false">Inactive (Deactivated)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes & Preferences</label>
+            <textarea class="form-control" formControlName="notes" rows="3" placeholder="Add specific notes, billing requirements, or special instructions..."></textarea>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closeEditModal()" [disabled]="isSubmitting">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
+            {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+

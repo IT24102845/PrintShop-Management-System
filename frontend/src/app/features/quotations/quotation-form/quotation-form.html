@@ -1,0 +1,156 @@
+<!-- Dedicated Quotation Creation Form - separate from the Orders workflow -->
+<div class="page-container" style="max-width:860px">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>New Quotation</h1>
+      <p>Create a price estimate for a print order</p>
+    </div>
+    <div class="page-header-actions">
+      <a routerLink="/app/quotations" class="btn btn-secondary">
+        <span class="material-icons-outlined">arrow_back</span> Back to Quotations
+      </a>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+    @if (errorMessage) {
+      <div class="alert alert-error mb-6">
+        <span class="material-icons-outlined alert-icon">error</span>
+        {{ errorMessage }}
+      </div>
+    }
+
+    <!-- Order Selection -->
+    <div class="card card-body mb-4">
+      <h2 class="section-label">Linked Order</h2>
+
+      <div class="form-group">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem">
+          <label style="margin-bottom:0; font-weight:600">Order ID *</label>
+          <button type="button" class="btn-text-toggle" (click)="setManualMode(!manualMode)">
+            {{ manualMode ? '← Choose from Order list' : 'Or type UUID manually' }}
+          </button>
+        </div>
+
+        @if (!manualMode) {
+          <select class="form-select" formControlName="order_id"
+                  [class.is-invalid]="f['order_id'].invalid && f['order_id'].touched"
+                  (change)="onOrderSelect($event)">
+            <option value="">
+              {{ isLoadingOrders ? 'Loading orders…' : '— Select an Order (' + orders.length + ' available) —' }}
+            </option>
+            @if (pendingOrders.length > 0) {
+              <optgroup label="⚡ Orders Awaiting Quote (Pending / Design Review)">
+                @for (o of pendingOrders; track o.id) {
+                  <option [value]="o.id">
+                    #{{ o.id.substring(0,8) }} — {{ (o.service_type || '').replace('_',' ') | titlecase }}
+                    ({{ o.quantity }} pcs) · [{{ (o.status || '').toUpperCase() }}]
+                    — {{ (o.description || o.special_notes || 'Print Job') | slice:0:50 }}
+                  </option>
+                }
+              </optgroup>
+            }
+            @if (otherOrders.length > 0) {
+              <optgroup label="📦 Other Active Orders">
+                @for (o of otherOrders; track o.id) {
+                  <option [value]="o.id">
+                    #{{ o.id.substring(0,8) }} — {{ (o.service_type || '').replace('_',' ') | titlecase }}
+                    ({{ o.quantity }} pcs) · [{{ (o.status || '').toUpperCase() }}]
+                    — {{ (o.description || o.special_notes || 'Print Job') | slice:0:50 }}
+                  </option>
+                }
+              </optgroup>
+            }
+          </select>
+        } @else {
+          <input class="form-control" formControlName="order_id"
+                 [class.is-invalid]="f['order_id'].invalid && f['order_id'].touched"
+                 placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+          <small class="text-muted" style="font-size:0.75rem;display:block;margin-top:0.25rem">
+            Enter or paste the full 36-character order UUID
+          </small>
+        }
+
+        @if (f['order_id'].invalid && f['order_id'].touched) {
+          <span class="error-msg">Please select or enter an Order ID</span>
+        }
+      </div>
+
+      <!-- Selected Order Preview -->
+      @if (selectedOrder) {
+        <div class="selected-order-preview">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem">
+            <span style="font-weight:600; color:#1e293b">
+              Order #{{ selectedOrder.id.substring(0,8) }} —
+              {{ (selectedOrder.service_type || '').replace('_',' ') | titlecase }}
+            </span>
+            <span class="status-pill status-{{ selectedOrder.status }}">
+              {{ (selectedOrder.status || '').toUpperCase() }}
+            </span>
+          </div>
+          <div style="color:#64748b; font-size:0.8125rem; display:flex; gap:1rem; flex-wrap:wrap;">
+            <span><strong>Qty:</strong> {{ selectedOrder.quantity }} pcs</span>
+            @if (selectedOrder.material) { <span><strong>Material:</strong> {{ selectedOrder.material }}</span> }
+            @if (selectedOrder.size) { <span><strong>Size:</strong> {{ selectedOrder.size }}</span> }
+            @if (selectedOrder.deadline_date) {
+              <span><strong>Deadline:</strong> {{ selectedOrder.deadline_date | date:'MMM d, y' }}</span>
+            }
+          </div>
+          @if (selectedOrder.description || selectedOrder.special_notes) {
+            <div style="color:#334155; font-size:0.8125rem; margin-top:0.35rem; font-style:italic;">
+              "{{ selectedOrder.description || selectedOrder.special_notes }}"
+            </div>
+          }
+          <div style="color:#94a3b8; font-family:monospace; font-size:0.7rem; margin-top:0.25rem;">
+            UUID: {{ selectedOrder.id }}
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Pricing Details -->
+    <div class="card card-body mb-4">
+      <h2 class="section-label">Pricing Details</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="amount">Quoted Amount (LKR) *</label>
+          <input id="amount" type="number" class="form-control" formControlName="amount"
+                 [class.is-invalid]="f['amount'].invalid && f['amount'].touched"
+                 min="1" step="50" placeholder="e.g. 15000" />
+          @if (f['amount'].invalid && f['amount'].touched) {
+            <span class="error-msg">A valid amount greater than 0 is required</span>
+          }
+        </div>
+
+        <div class="form-group">
+          <label for="valid_until">Valid Until</label>
+          <input id="valid_until" type="date" class="form-control" formControlName="valid_until" />
+          <small class="text-muted" style="font-size:0.75rem;display:block;margin-top:0.25rem">
+            Defaults to 14 days from today
+          </small>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="notes">Commercial Notes &amp; Specifications</label>
+        <textarea id="notes" class="form-control" formControlName="notes" rows="3"
+                  placeholder="e.g. Includes lamination, die-cutting, delivery included, bulk discount applied…"></textarea>
+      </div>
+    </div>
+
+    <!-- Submit Bar -->
+    <div class="form-footer-bar">
+      <a routerLink="/app/quotations" class="btn btn-secondary">Cancel</a>
+      <button type="submit" class="btn btn-primary btn-lg" [disabled]="isLoading">
+        @if (isLoading) {
+          <span class="material-icons-outlined spin">sync</span> Creating…
+        } @else {
+          <span class="material-icons-outlined">check</span> Create Quotation
+        }
+      </button>
+    </div>
+
+  </form>
+</div>

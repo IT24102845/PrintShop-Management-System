@@ -1,0 +1,140 @@
+<!-- This form collects order specifications and job details. -->
+<div class="page-container" style="max-width:860px">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>New Order</h1>
+      <p>{{ isStaff ? 'Create a print order for a customer' : 'Place a new print order' }}</p>
+    </div>
+    <div class="page-header-actions">
+      <a [routerLink]="isStaff ? '/app/orders' : '/customer/orders'" class="btn btn-secondary">
+        <span class="material-icons-outlined">arrow_back</span> Back
+      </a>
+    </div>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="onSubmit()">
+
+    @if (errorMessage) {
+      <div class="alert alert-error mb-6">
+        <span class="material-icons-outlined alert-icon">error</span>
+        {{ errorMessage }}
+      </div>
+    }
+
+    <!-- Customer Selection (Staff Only) -->
+    @if (isStaff) {
+      <div class="card card-body mb-4">
+        <h2 class="section-label">Customer</h2>
+        <div class="form-group">
+          <label for="customer_id">Select Customer *</label>
+          <select id="customer_id" class="form-select" formControlName="customer_id"
+                  [class.is-invalid]="f['customer_id'].invalid && f['customer_id'].touched">
+            <option [value]="null">{{ loadingCustomers ? 'Loading…' : '— Select a customer —' }}</option>
+            @for (c of customers; track (c.id || c.customer_id)) {
+              <option [value]="c.id || c.customer_id">{{ c.full_name }} — {{ c.email }}</option>
+            }
+          </select>
+          @if (f['customer_id'].invalid && f['customer_id'].touched) {
+            <span class="error-msg">Please select a customer</span>
+          }
+        </div>
+        <div class="new-customer-hint">
+          Customer not in system? <a routerLink="/app/customers/new">Create new customer first →</a>
+        </div>
+      </div>
+    }
+
+    <!-- Order Details -->
+    <div class="card card-body mb-4">
+      <h2 class="section-label">Order Details</h2>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="service_type">Service Type *</label>
+          <select id="service_type" class="form-select" formControlName="service_type"
+                  [class.is-invalid]="f['service_type'].invalid && f['service_type'].touched">
+            <option value="">— Select service —</option>
+            @for (s of serviceTypes; track s) {
+              <option [value]="s">{{ s.replace(/_/g,' ') | titlecase }}</option>
+            }
+          </select>
+          @if (f['service_type'].invalid && f['service_type'].touched) {
+            <span class="error-msg">Service type is required</span>
+          }
+        </div>
+        <div class="form-group">
+          <label for="quantity">Quantity *</label>
+          <input id="quantity" type="number" class="form-control" formControlName="quantity"
+                 [class.is-invalid]="f['quantity'].invalid && f['quantity'].touched"
+                 min="1" placeholder="100" />
+          @if (f['quantity'].invalid && f['quantity'].touched) {
+            <span class="error-msg">Quantity must be at least 1</span>
+          }
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="description">Description *</label>
+        <textarea id="description" class="form-control" formControlName="description"
+                  [class.is-invalid]="f['description'].invalid && f['description'].touched"
+                  rows="3" placeholder="Describe your print job in detail (at least 10 chars)…"></textarea>
+        @if (f['description'].invalid && f['description'].touched) {
+          <span class="error-msg">Description is required (min 10 characters)</span>
+        }
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="size">Size / Dimensions</label>
+          <input id="size" class="form-control" formControlName="size" placeholder="e.g. A4, 90x50mm, 24x36in" />
+        </div>
+        <div class="form-group">
+          <label for="colour">Colour</label>
+          <input id="colour" class="form-control" formControlName="colour" placeholder="e.g. Full colour, CMYK, Black" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="material">Material / Paper</label>
+          <input id="material" class="form-control" formControlName="material" placeholder="e.g. 300gsm Gloss, Vinyl" />
+        </div>
+        <div class="form-group">
+          <label for="deadline_date">Deadline Date</label>
+          <input id="deadline_date" type="date" class="form-control" formControlName="deadline_date" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="special_notes">Special Notes</label>
+        <textarea id="special_notes" class="form-control" formControlName="special_notes"
+                  rows="2" placeholder="Any special requirements, finishing, delivery instructions…"></textarea>
+      </div>
+    </div>
+
+    <!-- Design File Upload -->
+    <div class="card card-body mb-4">
+      <h2 class="section-label">Design File <span class="optional-label">(optional)</span></h2>
+      <p class="section-hint">Upload your artwork file. You can also attach designs later.</p>
+      <app-file-upload folder="orders" (fileUploaded)="onFileUploaded($event)"></app-file-upload>
+    </div>
+
+    <!-- Submit -->
+    @if (errorMessage) {
+      <div class="alert alert-error mb-4">
+        <span class="material-icons-outlined alert-icon">error</span>
+        {{ errorMessage }}
+      </div>
+    }
+
+    <div class="form-footer-bar">
+      <a [routerLink]="isStaff ? '/app/orders' : '/customer/orders'" class="btn btn-secondary">Cancel</a>
+      <!-- Clicking this button calls the component method to submit the order. -->
+      <button type="submit" class="btn btn-primary btn-lg" [disabled]="isLoading">
+        @if (isLoading) { <span class="material-icons-outlined spin">sync</span> Creating… }
+        @else { <span class="material-icons-outlined">check</span> Create Order }
+      </button>
+    </div>
+
+  </form>
+</div>

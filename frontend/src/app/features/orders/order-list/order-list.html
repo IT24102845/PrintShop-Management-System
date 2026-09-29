@@ -1,0 +1,110 @@
+<!-- Displays the orders list returned from the backend. -->
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Orders</h1>
+      <p>All print shop orders</p>
+    </div>
+    <div class="page-header-actions">
+      <a routerLink="/app/orders/new" class="btn btn-primary">
+        <span class="material-icons-outlined">add</span> New Order
+      </a>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="actions-bar">
+    <div class="actions-bar-left">
+      <div class="search-input-wrapper" style="flex:1;max-width:300px">
+        <span class="material-icons-outlined search-icon">search</span>
+        <input class="form-control" type="text" placeholder="Search customer…"
+               [(ngModel)]="searchTerm" (ngModelChange)="onSearch()" />
+      </div>
+      <select class="form-select" style="width:160px" [(ngModel)]="statusFilter" (ngModelChange)="onFilterChange()">
+        <option value="">All Statuses</option>
+        @for (s of orderStatuses; track s) {
+          <option [value]="s">{{ s.replace('_',' ') | titlecase }}</option>
+        }
+      </select>
+      <select class="form-select" style="width:170px" [(ngModel)]="serviceFilter" (ngModelChange)="onFilterChange()">
+        <option value="">All Services</option>
+        @for (s of serviceTypes; track s) {
+          <option [value]="s">{{ s.replace('_',' ') | titlecase }}</option>
+        }
+      </select>
+    </div>
+    <div class="actions-bar-right">
+      <span class="text-muted text-sm">{{ total }} total</span>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (isLoading) {
+      @for (i of [1,2,3,4,5,6,7]; track i) {
+        <div class="skeleton skeleton-row"></div>
+      }
+    } @else if (orders.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon"><span class="material-icons-outlined">receipt_long</span></div>
+        <h3>No orders found</h3>
+        <p>{{ searchTerm || statusFilter || serviceFilter ? 'Try adjusting your filters.' : 'Create the first order.' }}</p>
+        <a routerLink="/app/orders/new" class="btn btn-primary">New Order</a>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Service</th>
+            <th>Qty</th>
+            <th>Status</th>
+            <th>Deadline</th>
+            <th>Created</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (order of orders; track order.id || order.order_id) {
+            <tr>
+              <td class="font-medium" style="font-family:monospace;font-size:0.8rem">
+                {{ (order.id || order.order_id)?.substring(0,8) }}…
+              </td>
+              <td>
+                <div class="font-medium">{{ order.customers?.users?.full_name || order.customer_name || '—' }}</div>
+                <div class="text-muted text-xs">{{ order.customers?.users?.email || '' }}</div>
+              </td>
+              <td>{{ (order.service_type)?.replace(/_/g,' ') | titlecase }}</td>
+              <td>{{ order.quantity }}</td>
+              <td><app-status-badge [status]="order.status || order.order_status"></app-status-badge></td>
+              <td class="text-sm">
+                {{ order.deadline_date ? (order.deadline_date | date:'MMM d') : '—' }}
+              </td>
+              <td class="text-muted text-sm">{{ order.created_at | date:'MMM d, y' }}</td>
+              <td>
+                <a [routerLink]="'/app/orders/' + (order.id || order.order_id)"
+                   class="btn btn-secondary btn-sm">View</a>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <span class="pagination-info">Showing {{ from }}–{{ to }} of {{ total }}</span>
+          <div class="pagination-controls">
+            <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="page===1">
+              <span class="material-icons-outlined">chevron_left</span>
+            </button>
+            <span class="text-sm text-muted">{{ page }} / {{ totalPages }}</span>
+            <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="page===totalPages">
+              <span class="material-icons-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,215 @@
+<div class="page-container reports-page">
+
+  <!-- Print-Only Supreme Advertising Brand Header -->
+  <div class="print-brand-banner">
+    <img src="/logo-transparent.png" alt="Supreme Advertising" class="print-brand-logo" />
+    <div class="print-brand-meta">
+      <span class="print-doc-title">Executive Operations & Analytics Report</span>
+      <span class="print-doc-date">Supreme Advertising Management System</span>
+    </div>
+  </div>
+
+  <!-- Header -->
+  <div class="page-header print-header">
+    <div class="page-header-left">
+      <h1>Operational Reports & Analytics</h1>
+      <p>System-wide volume, revenue realization, production pipeline, and supply metrics</p>
+    </div>
+    <div class="page-header-actions no-print">
+      <button class="btn btn-outline" (click)="printReport()">
+        <span class="material-icons-outlined">print</span> Print Report
+      </button>
+      <button class="btn btn-secondary" (click)="loadReports()">
+        <span class="material-icons-outlined">refresh</span> Refresh
+      </button>
+    </div>
+  </div>
+
+  @if (isLoading) {
+    <div class="loading-container">
+      <div class="skeleton" style="height: 120px; border-radius: 8px; margin-bottom: 1.5rem;"></div>
+      <div class="skeleton-grid">
+        <div class="skeleton" style="height: 250px; border-radius: 8px;"></div>
+        <div class="skeleton" style="height: 250px; border-radius: 8px;"></div>
+      </div>
+    </div>
+  } @else {
+
+    <!-- KPI Summary Row -->
+    <div class="reports-kpi-row">
+      <div class="kpi-card">
+        <span class="kpi-label">Total Realized Revenue</span>
+        <h2 class="kpi-value text-success">{{ revenueStats.totalRevenue | currency:'LKR ':'symbol':'1.0-0' }}</h2>
+        <span class="kpi-sub">{{ revenueStats.completedPaymentsCount }} settlements</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Total Orders Sampled</span>
+        <h2 class="kpi-value">{{ totalOrders }}</h2>
+        <span class="kpi-sub">Lifetime orders</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Active on Press</span>
+        <h2 class="kpi-value text-primary">{{ productionStats.printing }}</h2>
+        <span class="kpi-sub">Jobs in printing</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Low Stock Alerts</span>
+        <h2 class="kpi-value" [class.text-danger]="lowStockItems.length > 0">{{ lowStockItems.length }}</h2>
+        <span class="kpi-sub">Items need reorder</span>
+      </div>
+    </div>
+
+    <!-- 2x2 Reports Grid -->
+    <div class="reports-grid">
+
+      <!-- REPORT 1: Orders By Status -->
+      <div class="card report-card">
+        <div class="card-header">
+          <div class="title-group">
+            <span class="material-icons-outlined">pie_chart</span>
+            <h3>Orders by Status</h3>
+          </div>
+          <span class="badge badge-neutral">{{ ordersByStatus.length }} categories</span>
+        </div>
+        <div class="card-body">
+          <div class="status-distribution-list">
+            @for (item of ordersByStatus; track item.status) {
+              <div class="distribution-item">
+                <div class="dist-header">
+                  <app-status-badge [status]="item.status"></app-status-badge>
+                  <span class="dist-count">{{ item.count }} orders ({{ item.percentage }}%)</span>
+                </div>
+                <div class="progress-bar-bg">
+                  <div class="progress-bar-fill" [style.width.%]="item.percentage"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT 2: Orders By Service Type -->
+      <div class="card report-card">
+        <div class="card-header">
+          <div class="title-group">
+            <span class="material-icons-outlined">bar_chart</span>
+            <h3>Orders by Service Category</h3>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="service-table-wrapper">
+            <table class="data-table-compact">
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Orders</th>
+                  <th>Share</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of ordersByService; track item.service) {
+                  <tr>
+                    <td class="font-medium">{{ item.service.replace('_', ' ') | titlecase }}</td>
+                    <td>{{ item.count }}</td>
+                    <td>
+                      <div class="share-cell">
+                        <span>{{ item.percentage }}%</span>
+                        <div class="mini-bar">
+                          <div class="mini-bar-fill" [style.width.%]="item.percentage"></div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT 3: Production Pipeline Summary -->
+      <div class="card report-card">
+        <div class="card-header">
+          <div class="title-group">
+            <span class="material-icons-outlined">precision_manufacturing</span>
+            <h3>Production Pipeline Breakdown</h3>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="pipeline-grid">
+            <div class="pipeline-item">
+              <span class="pipe-label">Waiting</span>
+              <span class="pipe-value">{{ productionStats.waiting }}</span>
+            </div>
+            <div class="pipeline-item">
+              <span class="pipe-label">Printing</span>
+              <span class="pipe-value text-primary font-bold">{{ productionStats.printing }}</span>
+            </div>
+            <div class="pipeline-item">
+              <span class="pipe-label">Quality Check</span>
+              <span class="pipe-value">{{ productionStats.qualityCheck }}</span>
+            </div>
+            <div class="pipeline-item">
+              <span class="pipe-label">Ready for Delivery</span>
+              <span class="pipe-value text-success">{{ productionStats.readyForDelivery }}</span>
+            </div>
+            <div class="pipeline-item">
+              <span class="pipe-label">Completed Jobs</span>
+              <span class="pipe-value text-success font-bold">{{ productionStats.completed }}</span>
+            </div>
+            <div class="pipeline-item">
+              <span class="pipe-label">Failed / Issues</span>
+              <span class="pipe-value" [class.text-danger]="productionStats.failed > 0">{{ productionStats.failed }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- REPORT 4: Low Stock Inventory Materials -->
+      <div class="card report-card">
+        <div class="card-header">
+          <div class="title-group">
+            <span class="material-icons-outlined">inventory_2</span>
+            <h3>Critical Stock Replenishment</h3>
+          </div>
+          @if (lowStockItems.length > 0) {
+            <span class="badge badge-danger">Action Needed</span>
+          }
+        </div>
+        <div class="card-body">
+          @if (lowStockItems.length === 0) {
+            <div class="empty-state-mini">
+              <span class="material-icons-outlined text-success">check_circle</span>
+              <p>All materials are currently above minimum threshold levels.</p>
+            </div>
+          } @else {
+            <div class="stock-list">
+              @for (item of lowStockItems; track item.id) {
+                <div class="stock-item-row">
+                  <div class="stock-info">
+                    <span class="stock-name">{{ item.material_name }}</span>
+                    <span class="stock-meta">{{ item.category }} · Supplier: {{ item.suppliers?.supplier_name || 'Standard' }}</span>
+                  </div>
+                  <div class="stock-figures">
+                    <span class="stock-qty font-bold" [class.text-danger]="item.quantity === 0">
+                      {{ item.quantity }} / {{ item.minimum_stock_level }} {{ item.unit }}
+                    </span>
+                    <span class="badge" [class.badge-danger]="item.quantity === 0" [class.badge-warning]="item.quantity > 0">
+                      {{ item.quantity === 0 ? 'OUT' : 'LOW' }}
+                    </span>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+  }
+
+</div>

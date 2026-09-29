@@ -1,0 +1,252 @@
+<div class="page-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-header-left">
+      <h1>Payments & Billing</h1>
+      <p>Financial ledger, invoice settlements, and revenue transactions</p>
+    </div>
+    <div class="page-header-actions">
+      <button class="btn btn-primary" (click)="openRecordModal()">
+        <span class="material-icons-outlined">add</span> Record Payment
+      </button>
+    </div>
+  </div>
+
+  <!-- KPI Banner Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card">
+      <div class="kpi-icon icon-revenue">
+        <span class="material-icons-outlined">payments</span>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Realized Revenue</span>
+        <h3 class="kpi-value">{{ revenueStats.totalRevenue | currency:'LKR ':'symbol':'1.0-0' }}</h3>
+        <p class="kpi-sub">{{ revenueStats.completedPaymentsCount }} successful transactions</p>
+      </div>
+    </div>
+
+    <div class="kpi-card">
+      <div class="kpi-icon icon-count">
+        <span class="material-icons-outlined">receipt_long</span>
+      </div>
+      <div class="kpi-content">
+        <span class="kpi-label">Recorded Transactions</span>
+        <h3 class="kpi-value">{{ total }}</h3>
+        <p class="kpi-sub">Across all print shop accounts</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters Bar -->
+  <div class="actions-bar">
+    <div class="actions-bar-left">
+      <div class="search-input-wrapper" style="flex:1;max-width:320px">
+        <span class="material-icons-outlined search-icon">search</span>
+        <input class="form-control" [(ngModel)]="searchTerm" placeholder="Search reference, order, client..." />
+      </div>
+
+      <select class="form-select" style="width:160px" [(ngModel)]="methodFilter">
+        <option value="">All Methods</option>
+        @for (m of paymentMethods; track m) {
+          <option [value]="m">{{ m.replace('_', ' ') | titlecase }}</option>
+        }
+      </select>
+
+      <select class="form-select" style="width:160px" [(ngModel)]="statusFilter">
+        <option value="">All Statuses</option>
+        @for (s of paymentStatuses; track s) {
+          <option [value]="s">{{ s.replace('_', ' ') | titlecase }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="actions-bar-right">
+      <span class="text-muted text-sm">{{ filteredPayments.length }} payments shown</span>
+    </div>
+  </div>
+
+  <!-- Payments Table -->
+  <div class="table-wrapper">
+    @if (isLoading) {
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="skeleton skeleton-row"></div>
+      }
+    } @else if (filteredPayments.length === 0) {
+      <div class="empty-state">
+        <div class="empty-icon"><span class="material-icons-outlined">credit_card_off</span></div>
+        <h3>No Payment Records Found</h3>
+        <p>{{ searchTerm || methodFilter || statusFilter ? 'Try adjusting your filters.' : 'Record a payment for an active order.' }}</p>
+        <button class="btn btn-primary" (click)="openRecordModal()">Record Payment</button>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Date & Time</th>
+            <th>Order Ref</th>
+            <th>Client</th>
+            <th>Method</th>
+            <th>Reference / Notes</th>
+            <th>Status</th>
+            <th style="text-align: right;">Amount</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of filteredPayments; track p.id) {
+            <tr>
+              <td class="text-sm">
+                <div>{{ (p.paid_at || p.created_at) | date:'mediumDate' }}</div>
+                <div class="text-muted text-xs">{{ (p.paid_at || p.created_at) | date:'shortTime' }}</div>
+              </td>
+              <td>
+                <a [routerLink]="['/app/orders', p.order_id]" class="order-link font-medium">
+                  #{{ (p.order_id || '').substring(0, 8) }}
+                </a>
+                <div class="text-xs text-muted">{{ p.orders?.service_type?.replace('_', ' ') | titlecase }}</div>
+              </td>
+              <td>
+                <div class="font-medium text-main">{{ p.orders?.customers?.users?.full_name || '—' }}</div>
+                <div class="text-xs text-muted">{{ p.orders?.customers?.users?.email || '' }}</div>
+              </td>
+              <td>
+                <span class="method-tag">{{ p.payment_method?.replace('_', ' ') | titlecase }}</span>
+              </td>
+              <td class="text-sm">
+                @if (p.transaction_ref) {
+                  <div class="ref-badge">{{ p.transaction_ref }}</div>
+                }
+                @if (p.notes) {
+                  <div class="text-xs text-muted">{{ p.notes }}</div>
+                }
+                @if (!p.transaction_ref && !p.notes) {
+                  <span class="text-muted text-xs">—</span>
+                }
+              </td>
+              <td>
+                <app-status-badge [status]="p.payment_status"></app-status-badge>
+              </td>
+              <td style="text-align: right;" class="font-bold text-main">
+                {{ p.amount | currency:'LKR ':'symbol':'1.2-2' }}
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (totalPages > 1) {
+        <div class="pagination">
+          <span class="pagination-info">Page {{ page }} of {{ totalPages }} ({{ total }} total payments)</span>
+          <div class="pagination-controls">
+            <button class="btn btn-secondary btn-sm" (click)="prevPage()" [disabled]="page === 1">
+              <span class="material-icons-outlined">chevron_left</span>
+            </button>
+            <span class="text-sm text-muted">{{ page }} / {{ totalPages }}</span>
+            <button class="btn btn-secondary btn-sm" (click)="nextPage()" [disabled]="page === totalPages">
+              <span class="material-icons-outlined">chevron_right</span>
+            </button>
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+</div>
+
+<!-- Record Payment Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="showModal.set(false)">
+    <div class="modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3>Record Client Payment</h3>
+        <button class="modal-close" (click)="showModal.set(false)">✕</button>
+      </div>
+      <form [formGroup]="paymentForm" (ngSubmit)="onSubmit()">
+        <div class="modal-body">
+          <div class="form-group mb-3">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem">
+              <label class="form-label" style="margin-bottom:0">Order *</label>
+              <button type="button" class="btn-text-toggle" (click)="setManualOrderMode(!manualOrderMode)" style="font-size:0.78125rem; color:var(--primary-color, #0071e3); background:none; border:none; cursor:pointer; text-decoration:underline;">
+                {{ manualOrderMode ? '← Choose from Orders list' : 'Or enter UUID manually' }}
+              </button>
+            </div>
+
+            @if (!manualOrderMode) {
+              <select class="form-select" formControlName="order_id" (change)="onOrderSelect($event)">
+                <option value="">
+                  {{ isLoadingOrders ? 'Loading available orders…' : '-- Select an Order to Pay (' + orders.length + ' available) --' }}
+                </option>
+                @for (o of orders; track o.id) {
+                  <option [value]="o.id">
+                    #{{ o.id.substring(0,8) }} — {{ (o.service_type || '').replace('_',' ') | titlecase }} ({{ o.quantity }} pcs) • [{{ (o.status || '').toUpperCase() }}] — {{ (o.description || o.special_notes || 'Print Job') | slice:0:45 }}
+                  </option>
+                }
+              </select>
+            } @else {
+              <input class="form-input" formControlName="order_id" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+              <small class="text-muted" style="font-size:0.75rem; display:block; margin-top:0.25rem;">Enter or paste the 36-character order UUID</small>
+            }
+
+            @if (selectedOrder) {
+              <div class="selected-order-card" style="margin-top:0.5rem; padding:0.65rem 0.85rem; background:#f8fafc; border:1px solid #e2e8f0; border-radius:8px; font-size:0.8125rem;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.25rem">
+                  <span style="font-weight:600; color:#1e293b;">
+                    Order #{{ selectedOrder.id.substring(0,8) }} — {{ (selectedOrder.service_type || '').replace('_',' ') | titlecase }}
+                  </span>
+                  <span style="padding:0.15rem 0.5rem; border-radius:9999px; font-size:0.7rem; font-weight:700; text-transform:uppercase; background:#e0f2fe; color:#0369a1;">
+                    {{ (selectedOrder.status || '').toUpperCase() }}
+                  </span>
+                </div>
+                <div style="color:#64748b; font-size:0.75rem;">
+                  Qty: {{ selectedOrder.quantity }} pcs • UUID: {{ selectedOrder.id }}
+                </div>
+              </div>
+            }
+          </div>
+
+          <div class="form-row mb-3">
+            <div class="form-group">
+              <label class="form-label">Amount (LKR) *</label>
+              <input type="number" class="form-input" formControlName="amount" min="1" step="50" placeholder="e.g. 5000" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Payment Method *</label>
+              <select class="form-select" formControlName="payment_method">
+                @for (m of paymentMethods; track m) {
+                  <option [value]="m">{{ m.replace('_', ' ') | titlecase }}</option>
+                }
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row mb-3">
+            <div class="form-group">
+              <label class="form-label">Payment Status</label>
+              <select class="form-select" formControlName="payment_status">
+                @for (s of paymentStatuses; track s) {
+                  <option [value]="s">{{ s.replace('_', ' ') | titlecase }}</option>
+                }
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Transaction Reference</label>
+              <input class="form-input" formControlName="transaction_ref" placeholder="POS code, slip #, etc." />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Payment Notes</label>
+            <input class="form-input" formControlName="notes" placeholder="Optional details..." />
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="showModal.set(false)">Cancel</button>
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || paymentForm.invalid">
+            {{ isSubmitting ? 'Recording...' : 'Record Payment' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

@@ -1,0 +1,92 @@
+<!-- This form collects user credentials for login authentication. -->
+<div class="auth-container" [class.customer-theme]="isCustomerPortal">
+  <div class="card auth-card">
+
+    <!-- Portal Indicator Badge -->
+    @if (isCustomerPortal) {
+      <div class="portal-badge-banner">
+        <span class="badge-apple-portal">
+          <span class="material-icons-outlined">storefront</span>
+          Customer Portal
+        </span>
+      </div>
+    }
+
+    <div class="auth-header">
+      <div class="auth-brand-card">
+        <img src="/logo-transparent.png" alt="Supreme Advertising" class="auth-brand-logo" />
+      </div>
+      <h2>{{ isCustomerPortal ? 'Customer Portal' : 'Print Shop Management System' }}</h2>
+      <p>{{ isCustomerPortal ? 'Supreme Advertising — Sign in to manage print orders, quotations & design approvals' : 'Supreme Advertising — Enter your credentials to access the management suite' }}</p>
+    </div>
+
+    <!-- Quick Demo Helper Pill -->
+    @if (isCustomerPortal) {
+      <div class="demo-credential-card">
+        <div class="demo-credential-info">
+          <span class="demo-label">Demo Customer Account</span>
+          <span class="demo-email">amina&#64;techstartup.com</span>
+        </div>
+        <button type="button" class="btn-demo-apply" (click)="fillDemoCustomer()" title="Auto-fill demo customer credentials">
+          <span class="material-icons-outlined">auto_fix_high</span> Auto-fill
+        </button>
+      </div>
+    } @else {
+      <div class="demo-credential-card">
+        <div class="demo-credential-info">
+          <span class="demo-label">Demo Staff / Admin Account</span>
+          <span class="demo-email">admin&#64;printshop.com</span>
+        </div>
+        <button type="button" class="btn-demo-apply" (click)="fillDemoAdmin()" title="Auto-fill admin credentials">
+          <span class="material-icons-outlined">auto_fix_high</span> Auto-fill
+        </button>
+      </div>
+    }
+
+    @if (errorMessage) {
+      <div class="alert alert-danger" role="alert">
+        <span class="material-icons-outlined alert-icon">error_outline</span>
+        <span>{{ errorMessage }}</span>
+      </div>
+    }
+
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" class="form-control" formControlName="email" placeholder="you@example.com">
+        <div *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.errors" class="text-danger mt-1 text-sm">
+          Please enter a valid email address.
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" id="password" class="form-control" formControlName="password" placeholder="••••••••">
+        <div *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.errors" class="text-danger mt-1 text-sm">
+          Password is required.
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4" [disabled]="isLoading">
+        {{ isLoading ? 'Signing in...' : (isCustomerPortal ? 'Sign In to Customer Portal' : 'Sign In') }}
+      </button>
+    </form>
+
+    <div class="auth-footer text-center mt-4">
+      <p>Don't have an account? <a [routerLink]="['/register']" [queryParams]="isCustomerPortal ? { portal: 'customer' } : { type: 'staff' }">Register here</a></p>
+
+      <!-- Switcher link between Customer Portal and Staff Portal -->
+      <div class="portal-switch-prompt mt-3">
+        @if (isCustomerPortal) {
+          <a routerLink="/login" class="portal-switch-link">
+            <span class="material-icons-outlined">badge</span> Switch to Staff Login
+          </a>
+        } @else {
+          <a routerLink="/login" [queryParams]="{ portal: 'customer', returnUrl: '/customer/dashboard' }" class="portal-switch-link">
+            <span class="material-icons-outlined">storefront</span> Go to Customer Portal Login
+          </a>
+        }
+      </div>
+    </div>
+  </div>
+</div>

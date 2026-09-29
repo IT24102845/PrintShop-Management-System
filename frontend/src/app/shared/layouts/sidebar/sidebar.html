@@ -1,0 +1,59 @@
+<!-- Mobile Overlay -->
+@if (isMobileOpen()) {
+  <div class="sidebar-overlay" (click)="closeMobile()"></div>
+}
+
+<aside class="sidebar" [class.mobile-open]="isMobileOpen()">
+
+  <!-- Brand Header -->
+  <div class="sidebar-header">
+    <div class="sidebar-brand-wrapper">
+      <div class="sidebar-logo-card">
+        <img src="/logo.png" alt="Supreme Advertising" class="sidebar-logo-img" />
+      </div>
+      <div class="sidebar-system-badge">
+        <span class="system-status-dot"></span>
+        <span class="system-name">Print Shop Suite</span>
+      </div>
+    </div>
+    <button class="sidebar-close" (click)="closeMobile()">
+      <span class="material-icons-outlined">close</span>
+    </button>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+    <ul class="nav-list">
+      @for (item of visibleNavItems(); track item.route; let idx = $index) {
+        @if (item.section && (idx === 0 || visibleNavItems()[idx - 1].section !== item.section)) {
+          <li class="nav-section-header">
+            <span>{{ item.section }}</span>
+          </li>
+        }
+        <li class="nav-item">
+          <a [routerLink]="item.route" routerLinkActive="active"
+             class="nav-link" (click)="closeMobile()">
+            <span class="material-icons-outlined nav-icon">{{ item.icon }}</span>
+            <span class="nav-text">{{ item.label }}</span>
+          </a>
+        </li>
+      }
+    </ul>
+  </nav>
+
+
+  <!-- User Footer -->
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="user-avatar">{{ userInitials() }}</div>
+      <div class="user-info">
+        <span class="user-name">{{ userName() }}</span>
+        <span class="user-role">{{ userRole() }}</span>
+      </div>
+    </div>
+    <button class="sidebar-logout" (click)="logout()" title="Log out">
+      <span class="material-icons-outlined">logout</span>
+    </button>
+  </div>
+
+</aside>

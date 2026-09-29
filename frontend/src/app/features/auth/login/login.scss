@@ -1,0 +1,199 @@
+.auth-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: var(--apple-bg, #f5f5f7);
+  padding: 2rem;
+  transition: background-color 0.3s ease;
+
+  &.customer-theme {
+    background: radial-gradient(circle at 50% 0%, rgba(0, 113, 227, 0.06) 0%, #f5f5f7 70%);
+  }
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 440px;
+  padding: 2.75rem 2.25rem;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-radius: 24px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.05), 0 2px 6px rgba(0, 0, 0, 0.03);
+}
+
+.portal-badge-banner {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 1.25rem;
+
+  .badge-apple-portal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+    padding: 0.35rem 0.85rem;
+    background: rgba(0, 113, 227, 0.1);
+    color: var(--apple-blue, #0071e3);
+    border-radius: 980px;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+
+    .material-icons-outlined {
+      font-size: 1rem;
+    }
+  }
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+
+  .auth-brand-card {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 0 auto 1.25rem;
+    padding: 0.5rem 1rem;
+    max-width: 240px;
+
+    .auth-brand-logo {
+      max-height: 65px;
+      width: auto;
+      max-width: 100%;
+      object-fit: contain;
+      filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.06));
+      transition: transform 0.2s ease;
+
+      &:hover {
+        transform: scale(1.02);
+      }
+    }
+  }
+
+  h2 {
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: #1d1d1f;
+    letter-spacing: -0.025em;
+    margin-bottom: 0.4rem;
+  }
+
+  p {
+    color: #86868b;
+    font-size: 0.875rem;
+    line-height: 1.45;
+  }
+}
+
+.demo-credential-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fbfbfd;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 14px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 1.25rem;
+
+  .demo-credential-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+
+    .demo-label {
+      font-size: 0.72rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #86868b;
+    }
+
+    .demo-email {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: #1d1d1f;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    }
+  }
+
+  .btn-demo-apply {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #ffffff;
+    border: 1px solid rgba(0, 0, 0, 0.12);
+    border-radius: 980px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #0071e3;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+
+    .material-icons-outlined {
+      font-size: 0.95rem;
+    }
+
+    &:hover {
+      background: #0071e3;
+      color: #ffffff;
+      border-color: #0071e3;
+      box-shadow: 0 2px 8px rgba(0, 113, 227, 0.25);
+    }
+  }
+}
+
+.alert {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+
+  .alert-icon {
+    font-size: 1.25rem;
+    flex-shrink: 0;
+  }
+}
+
+.alert-danger {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid rgba(220, 38, 38, 0.2);
+}
+
+.text-sm {
+  font-size: 0.75rem;
+}
+
+.portal-switch-prompt {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 0.875rem;
+
+  .portal-switch-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: #0071e3;
+    text-decoration: none;
+    transition: opacity 0.15s ease;
+
+    .material-icons-outlined {
+      font-size: 1.05rem;
+    }
+
+    &:hover {
+      text-decoration: underline;
+      opacity: 0.85;
+    }
+  }
+}

@@ -1,0 +1,409 @@
+<div class="page-container">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <div class="header-tag">MARKETING & MERCHANDISING</div>
+      <h1 class="page-title">Promotional Offers & Showcase</h1>
+      <p class="page-subtitle">
+        Control the showcase deck and deals displayed prominently on the Customer Portal dashboard.
+      </p>
+    </div>
+    <button (click)="openCreateModal()" class="apple-pill-btn pill-primary">
+      <span class="material-icons-outlined">add_circle</span>
+      Create New Offer
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (isLoading) {
+    <div class="offers-grid">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="card skeleton-card">
+          <div class="skeleton" style="height: 24px; width: 40%; margin-bottom: 1rem"></div>
+          <div class="skeleton" style="height: 32px; width: 75%; margin-bottom: 1rem"></div>
+          <div class="skeleton" style="height: 60px; width: 100%; margin-bottom: 1.5rem"></div>
+          <div class="skeleton" style="height: 40px; width: 120px; border-radius: 9999px"></div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Content -->
+  @if (!isLoading) {
+    <!-- Metrics Bar -->
+    <div class="metrics-bar">
+      <div class="metric-pill">
+        <span class="metric-num">{{ offers.length }}</span>
+        <span class="metric-txt">Total Offers</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-num text-success">{{ activeCount }}</span>
+        <span class="metric-txt">Live on Customer Portal</span>
+      </div>
+      <div class="metric-pill">
+        <span class="metric-num text-muted">{{ inactiveCount }}</span>
+        <span class="metric-txt">Draft / Inactive</span>
+      </div>
+    </div>
+
+    <!-- Live Card Showcase Preview -->
+    <div class="section-title-wrap">
+      <h2 class="section-title">Live Showcase Cards</h2>
+      <span class="section-badge">Customer Portal Appearance</span>
+    </div>
+
+    @if (offers.length === 0) {
+      <div class="card empty-state">
+        <span class="material-icons-outlined empty-icon">local_offer</span>
+        <h3>No promotional offers found</h3>
+        <p>Create your first offer to showcase special finishes, bulk discounts, or new printing capabilities.</p>
+        <button (click)="openCreateModal()" class="apple-pill-btn pill-primary" style="margin-top: 1rem">
+          Create Offer
+        </button>
+      </div>
+    } @else {
+      <div class="offers-preview-grid">
+        @for (offer of offers; track offer.id) {
+          <div class="offer-card-wrapper" [class.is-inactive]="!offer.is_active">
+            <!-- Theme Card -->
+            <div class="showcase-card showcase-{{ offer.theme || 'dark' }}">
+              <div class="showcase-content">
+                <span class="showcase-eyebrow">{{ offer.eyebrow }}</span>
+                <h3 class="showcase-title">{{ offer.title }}</h3>
+                <p class="showcase-desc">{{ offer.description }}</p>
+                <div class="showcase-actions">
+                  <span class="apple-pill-btn pill-preview">
+                    {{ offer.button_text }}
+                  </span>
+                </div>
+              </div>
+
+              <div class="showcase-visual">
+                @if (offer.badge_text) {
+                  <div class="visual-badge-pill">
+                    <span class="material-icons-outlined">{{ offer.badge_icon || 'auto_awesome' }}</span>
+                    <span>{{ offer.badge_text }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+
+            <!-- Card Control Bar -->
+            <div class="card-controls">
+              <div class="status-indicator">
+                <span class="status-dot" [class.dot-active]="offer.is_active"></span>
+                <span class="status-label">{{ offer.is_active ? 'Active on Portal' : 'Inactive (Hidden)' }}</span>
+                <span class="sort-tag">Order #{{ offer.sort_order }}</span>
+              </div>
+
+              <div class="action-buttons">
+                <button (click)="toggleActive(offer)" class="control-btn" [title]="offer.is_active ? 'Hide from portal' : 'Publish to portal'">
+                  <span class="material-icons-outlined">{{ offer.is_active ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+                <button (click)="openEditModal(offer)" class="control-btn" title="Edit offer">
+                  <span class="material-icons-outlined">edit</span>
+                </button>
+                <button (click)="deleteOffer(offer)" class="control-btn btn-danger" title="Delete offer">
+                  <span class="material-icons-outlined">delete</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Data Table View -->
+      <div class="card table-card">
+        <div class="card-header">
+          <span class="table-card-title">All Offers Directory</span>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Theme</th>
+                <th>Eyebrow & Title</th>
+                <th>Description</th>
+                <th>Button / Target</th>
+                <th>Badge</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (offer of offers; track offer.id) {
+                <tr [class.row-inactive]="!offer.is_active">
+                  <td class="font-mono font-bold">{{ offer.sort_order }}</td>
+                  <td>
+                    <span class="theme-chip theme-chip-{{ offer.theme }}">
+                      {{ offer.theme | titlecase }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="eyebrow-micro">{{ offer.eyebrow }}</div>
+                    <div class="font-bold">{{ offer.title }}</div>
+                  </td>
+                  <td class="text-sm desc-col" [title]="offer.description">
+                    {{ offer.description }}
+                  </td>
+                  <td>
+                    <span class="pill-preview-mini">{{ offer.button_text }}</span>
+                    @if (offer.service_query) {
+                      <div class="service-query-tag">?service={{ offer.service_query }}</div>
+                    }
+                  </td>
+                  <td>
+                    @if (offer.badge_text) {
+                      <span class="badge-mini">
+                        <span class="material-icons-outlined">{{ offer.badge_icon || 'auto_awesome' }}</span>
+                        {{ offer.badge_text }}
+                      </span>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="status-badge" [class.badge-active]="offer.is_active" [class.badge-inactive]="!offer.is_active">
+                      {{ offer.is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button (click)="openEditModal(offer)" class="btn btn-ghost btn-sm" title="Edit">
+                        <span class="material-icons-outlined">edit</span>
+                      </button>
+                      <button (click)="toggleActive(offer)" class="btn btn-ghost btn-sm" [title]="offer.is_active ? 'Deactivate' : 'Activate'">
+                        <span class="material-icons-outlined">{{ offer.is_active ? 'pause_circle' : 'play_circle' }}</span>
+                      </button>
+                      <button (click)="deleteOffer(offer)" class="btn btn-ghost btn-sm text-danger" title="Delete">
+                        <span class="material-icons-outlined">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Modal: Create / Edit Offer -->
+  @if (showModal()) {
+    <div class="modal-backdrop" (click)="closeModal()">
+      <div class="modal-dialog modal-lg" (click)="$event.stopPropagation()">
+        
+        <div class="modal-header">
+          <div>
+            <h2 class="modal-title">{{ isEditing() ? 'Edit Offer Card' : 'Create Promotional Offer' }}</h2>
+            <p class="modal-subtitle">Configure visual style, headlines, and call-to-action details.</p>
+          </div>
+          <button (click)="closeModal()" class="btn-close">
+            <span class="material-icons-outlined">close</span>
+          </button>
+        </div>
+
+        <form [formGroup]="offerForm" (ngSubmit)="onSubmit()" class="modal-form">
+          
+          <div class="modal-body-split">
+            <!-- Left Form Fields -->
+            <div class="form-fields-column">
+
+              <!-- Theme Selector -->
+              <div class="form-group">
+                <label class="form-label">Visual Style Theme</label>
+                <div class="theme-selector-grid">
+                  @for (opt of themeOptions; track opt.value) {
+                    <div
+                      class="theme-option-card"
+                      [class.selected]="offerForm.get('theme')?.value === opt.value"
+                      (click)="offerForm.get('theme')?.setValue(opt.value)"
+                    >
+                      <div class="theme-swatch {{ opt.previewClass }}"></div>
+                      <div class="theme-info">
+                        <div class="theme-name">{{ opt.label }}</div>
+                        <div class="theme-desc">{{ opt.desc }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Eyebrow & Title -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label" for="eyebrow">Eyebrow Headline *</label>
+                  <input
+                    id="eyebrow"
+                    type="text"
+                    formControlName="eyebrow"
+                    class="form-control"
+                    placeholder="e.g. PREMIUM FINISHES"
+                  />
+                  @if (offerForm.get('eyebrow')?.invalid && offerForm.get('eyebrow')?.touched) {
+                    <span class="form-error">Eyebrow is required (min 2 chars).</span>
+                  }
+                </div>
+
+                <div class="form-group" style="width: 140px;">
+                  <label class="form-label" for="sort_order">Sort Order *</label>
+                  <input
+                    id="sort_order"
+                    type="number"
+                    formControlName="sort_order"
+                    class="form-control"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="title">Title *</label>
+                <input
+                  id="title"
+                  type="text"
+                  formControlName="title"
+                  class="form-control"
+                  placeholder="e.g. Spot UV & Gold Foil Cards."
+                />
+                @if (offerForm.get('title')?.invalid && offerForm.get('title')?.touched) {
+                  <span class="form-error">Title is required (min 2 chars).</span>
+                }
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="description">Description / Pricing Subtitle *</label>
+                <textarea
+                  id="description"
+                  formControlName="description"
+                  class="form-control"
+                  rows="3"
+                  placeholder="e.g. From LKR 15 / card. Tactile velvety soft-touch with raised 3D metallic foil."
+                ></textarea>
+                @if (offerForm.get('description')?.invalid && offerForm.get('description')?.touched) {
+                  <span class="form-error">Description is required (min 5 chars).</span>
+                }
+              </div>
+
+              <!-- CTA Button & Link -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label" for="button_text">Button Text *</label>
+                  <input
+                    id="button_text"
+                    type="text"
+                    formControlName="button_text"
+                    class="form-control"
+                    placeholder="Order Now"
+                  />
+                </div>
+                <div class="form-group flex-1">
+                  <label class="form-label" for="service_query">Service Filter Tag</label>
+                  <input
+                    id="service_query"
+                    type="text"
+                    formControlName="service_query"
+                    class="form-control"
+                    placeholder="e.g. business_cards"
+                  />
+                </div>
+              </div>
+
+              <!-- Badge Details -->
+              <div class="form-row">
+                <div class="form-group flex-1">
+                  <label class="form-label" for="badge_text">Visual Badge Text</label>
+                  <input
+                    id="badge_text"
+                    type="text"
+                    formControlName="badge_text"
+                    class="form-control"
+                    placeholder="e.g. Soft-Touch Velvet 450gsm"
+                  />
+                </div>
+                <div class="form-group" style="width: 160px;">
+                  <label class="form-label" for="badge_icon">Badge Icon</label>
+                  <select id="badge_icon" formControlName="badge_icon" class="form-control">
+                    <option value="auto_awesome">Sparkles (auto_awesome)</option>
+                    <option value="speed">Lightning / Speed</option>
+                    <option value="eco">Eco Leaf</option>
+                    <option value="local_offer">Price Tag</option>
+                    <option value="percent">Percentage</option>
+                    <option value="star">Star / Premium</option>
+                    <option value="verified">Verified Check</option>
+                    <option value="bolt">Flash Bolt</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Status Switch -->
+              <div class="form-group form-check-wrap">
+                <label class="toggle-switch">
+                  <input type="checkbox" formControlName="is_active" />
+                  <span class="toggle-slider"></span>
+                </label>
+                <div>
+                  <div class="toggle-title">Active on Customer Portal</div>
+                  <div class="toggle-desc">When enabled, customers see this showcase card immediately on their dashboard.</div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Right Live Preview Column -->
+            <div class="preview-column">
+              <div class="preview-label-tag">REAL-TIME CARD PREVIEW</div>
+              
+              <div class="showcase-card showcase-{{ offerForm.get('theme')?.value || 'dark' }} preview-live-card">
+                <div class="showcase-content">
+                  <span class="showcase-eyebrow">{{ offerForm.get('eyebrow')?.value || 'EYEBROW' }}</span>
+                  <h3 class="showcase-title">{{ offerForm.get('title')?.value || 'Card Headline' }}</h3>
+                  <p class="showcase-desc">{{ offerForm.get('description')?.value || 'Card descriptive text will appear here.' }}</p>
+                  <div class="showcase-actions">
+                    <span class="apple-pill-btn pill-preview">
+                      {{ offerForm.get('button_text')?.value || 'Order Now' }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="showcase-visual">
+                  @if (offerForm.get('badge_text')?.value) {
+                    <div class="visual-badge-pill">
+                      <span class="material-icons-outlined">{{ offerForm.get('badge_icon')?.value || 'auto_awesome' }}</span>
+                      <span>{{ offerForm.get('badge_text')?.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="preview-hint">
+                <span class="material-icons-outlined">info</span>
+                <span>Matches the responsive dimensions and glass styling rendered to logged-in customers.</span>
+              </div>
+            </div>
+
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" (click)="closeModal()" class="btn btn-secondary">
+              Cancel
+            </button>
+            <button type="submit" [disabled]="isSubmitting" class="apple-pill-btn pill-primary">
+              @if (isSubmitting) {
+                Saving...
+              } @else {
+                {{ isEditing() ? 'Save Changes' : 'Create Offer' }}
+              }
+            </button>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  }
+
+</div>

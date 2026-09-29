@@ -1,0 +1,217 @@
+<!-- This form collects customer registration details with real-time validation. -->
+<div class="auth-container">
+  <div class="card auth-card">
+    <div class="auth-header">
+      <div class="auth-brand-card">
+        <img src="/logo-transparent.png" alt="Supreme Advertising" class="auth-brand-logo" />
+      </div>
+      <h2>{{ accountType === 'staff' ? 'Register as Staff Member' : 'Create an Account' }}</h2>
+      <p>{{ accountType === 'staff' ? 'Join Supreme Advertising staff to manage shop operations & orders' : 'Join Supreme Advertising to manage your print orders & quotes' }}</p>
+    </div>
+
+    <!-- Account Type Tabs -->
+    <div class="account-type-tabs mb-4">
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="accountType === 'customer'"
+        (click)="setAccountType('customer')">
+        <span class="material-icons-outlined">person</span>
+        Customer Account
+      </button>
+      <button
+        type="button"
+        class="tab-btn"
+        [class.active]="accountType === 'staff'"
+        (click)="setAccountType('staff')">
+        <span class="material-icons-outlined">badge</span>
+        Staff Member Account
+      </button>
+    </div>
+
+    @if (errorMessage) {
+      <div class="alert alert-error mb-4">
+        <span class="material-icons-outlined alert-icon">error</span>
+        <span>{{ errorMessage }}</span>
+      </div>
+    }
+
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" novalidate>
+      <!-- Staff Role Selector (Only when Account Type is Staff) -->
+      @if (accountType === 'staff') {
+        <div class="form-group staff-role-group mb-3">
+          <label for="role">Staff Role & Access Level *</label>
+          <select
+            id="role"
+            class="form-select"
+            formControlName="role"
+            [class.is-invalid]="f['role'].invalid && (f['role'].touched || isSubmitted)">
+            @for (role of staffRoles; track role.value) {
+              <option [value]="role.value">
+                {{ role.label }} — {{ role.description }}
+              </option>
+            }
+          </select>
+          @if (f['role'].invalid && (f['role'].touched || isSubmitted)) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Please select a staff role
+            </span>
+          }
+        </div>
+      }
+
+      <!-- Full Name -->
+      <div class="form-group">
+        <label for="full_name">Full Name *</label>
+        <input
+          type="text"
+          id="full_name"
+          class="form-control"
+          formControlName="full_name"
+          [class.is-invalid]="f['full_name'].invalid && (f['full_name'].touched || isSubmitted)"
+          placeholder="Jane Smith" />
+        @if (f['full_name'].invalid && (f['full_name'].touched || isSubmitted)) {
+          @if (f['full_name'].errors?.['required']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Full name is required
+            </span>
+          } @else if (f['full_name'].errors?.['minlength'] || f['full_name'].errors?.['pattern']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Must be at least 2 characters (letters, spaces, and hyphens only)
+            </span>
+          }
+        }
+      </div>
+
+      <!-- Email Address -->
+      <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input
+          type="email"
+          id="email"
+          class="form-control"
+          formControlName="email"
+          [class.is-invalid]="f['email'].invalid && (f['email'].touched || isSubmitted)"
+          placeholder="you@example.com" />
+        @if (f['email'].invalid && (f['email'].touched || isSubmitted)) {
+          @if (f['email'].errors?.['required']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Email address is required
+            </span>
+          } @else if (f['email'].errors?.['pattern']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Please enter a valid email address with a domain (e.g. name@domain.com)
+            </span>
+          }
+        }
+      </div>
+
+      <!-- Password -->
+      <div class="form-group">
+        <label for="password">Password *</label>
+        <div class="password-input-wrapper">
+          <input
+            [type]="showPassword ? 'text' : 'password'"
+            id="password"
+            class="form-control"
+            formControlName="password"
+            [class.is-invalid]="f['password'].invalid && (f['password'].touched || isSubmitted)"
+            placeholder="At least 8 characters" />
+          <button
+            type="button"
+            class="pwd-toggle-btn"
+            (click)="toggleShowPassword()"
+            [title]="showPassword ? 'Hide password' : 'Show password'">
+            <span class="material-icons-outlined">
+              {{ showPassword ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
+        @if (f['password'].invalid && (f['password'].touched || isSubmitted)) {
+          @if (f['password'].errors?.['required']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Password is required
+            </span>
+          } @else if (f['password'].errors?.['minlength']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Password must be at least 8 characters long
+            </span>
+          }
+        }
+
+        <!-- Password Checklist -->
+        <div class="pwd-requirements mt-2">
+          <span class="req-chip" [class.met]="hasMinLength">
+            <span class="material-icons-outlined chip-icon">{{ hasMinLength ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            8+ chars
+          </span>
+          <span class="req-chip" [class.met]="hasLetter">
+            <span class="material-icons-outlined chip-icon">{{ hasLetter ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            Letters
+          </span>
+          <span class="req-chip" [class.met]="hasNumberOrSymbol">
+            <span class="material-icons-outlined chip-icon">{{ hasNumberOrSymbol ? 'check_circle' : 'radio_button_unchecked' }}</span>
+            Number / Symbol
+          </span>
+        </div>
+      </div>
+
+      <!-- Confirm Password -->
+      <div class="form-group">
+        <label for="confirm_password">Confirm Password *</label>
+        <div class="password-input-wrapper">
+          <input
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            id="confirm_password"
+            class="form-control"
+            formControlName="confirm_password"
+            [class.is-invalid]="f['confirm_password'].invalid && (f['confirm_password'].touched || isSubmitted)"
+            placeholder="Re-enter password" />
+          <button
+            type="button"
+            class="pwd-toggle-btn"
+            (click)="toggleShowConfirmPassword()"
+            [title]="showConfirmPassword ? 'Hide password' : 'Show password'">
+            <span class="material-icons-outlined">
+              {{ showConfirmPassword ? 'visibility_off' : 'visibility' }}
+            </span>
+          </button>
+        </div>
+        @if (f['confirm_password'].invalid && (f['confirm_password'].touched || isSubmitted)) {
+          @if (f['confirm_password'].errors?.['required']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Please confirm your password
+            </span>
+          } @else if (f['confirm_password'].errors?.['passwordMismatch']) {
+            <span class="error-msg">
+              <span class="material-icons-outlined error-icon">error_outline</span>
+              Passwords do not match
+            </span>
+          }
+        }
+      </div>
+
+      <button type="submit" class="btn btn-primary w-100 mt-4" [disabled]="isLoading">
+        @if (isLoading) {
+          <span class="material-icons-outlined spin">sync</span>
+          <span>Creating Account…</span>
+        } @else {
+          <span class="material-icons-outlined">{{ accountType === 'staff' ? 'badge' : 'person_add' }}</span>
+          <span>{{ accountType === 'staff' ? 'Register Staff Account' : 'Create Account' }}</span>
+        }
+      </button>
+    </form>
+
+    <div class="auth-footer text-center mt-4">
+      <p>Already have an account? <a routerLink="/login">Sign in</a></p>
+    </div>
+  </div>
+</div>

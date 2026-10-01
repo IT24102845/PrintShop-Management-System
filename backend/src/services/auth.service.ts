@@ -11,6 +11,7 @@
 
 import bcrypt from 'bcryptjs';
 import jwt, { SignOptions, JwtPayload as JwtLibPayload } from 'jsonwebtoken';
+import crypto from 'crypto';
 import { supabase } from '../config/supabase';
 import { AppError, UserRole } from '../types';
 import { User, UserPublic } from '../models/user.model';
@@ -41,7 +42,7 @@ export interface JwtPayload {
   exp?:  number;
 }
 
-/** Payload required to register a new user */
+/** Payload required to register a new customer user (public endpoint) */
 export interface RegisterDto {
   full_name: string;
   email:     string;
@@ -49,7 +50,8 @@ export interface RegisterDto {
   phone?:    string;
   address?:  string;
   company?:  string;
-  role?:     UserRole;
+  // NOTE: role is intentionally excluded — public registration is always 'customer'.
+  // Staff accounts must be created via the protected POST /api/v1/auth/staff endpoint.
 }
 
 /** Payload required for admin/manager to create a staff member */
@@ -93,25 +95,28 @@ export class AuthService {
   // ─── Register ──────────────────────────────────────────────────────────────
 
   /**
-   * Creates a new user account.
-   * Supports customer and staff member registration based on requested role.
+   * Creates a new **customer** user account (public registration).
    * - Validates email uniqueness
    * - Hashes password with bcrypt (cost 12)
-   * - Inserts into users table with specified role (defaults to 'customer')
-   * - Auto-creates customer or employee profile
+   * - Inserts into users table with role forced to 'customer'
+   * - Auto-creates customer profile
    * - Returns JWT + safe user object
+   *
+   * SECURITY: The role is always 'customer' regardless of request body content.
+   * Staff accounts must be created via createStaff() (POST /api/v1/auth/staff).
    */
   async register(dto: RegisterDto): Promise<AuthResponse> {
-    const allowedRoles: UserRole[] = [
-      'customer',
-      'manager',
-      'customer_service',
-      'design_staff',
-      'production_staff',
-      'inventory_staff',
-      'admin',
-    ];
-    const role: UserRole = (dto.role && allowedRoles.includes(dto.role)) ? dto.role : 'customer';
+    // SECURITY: Force role to 'customer' — ignore any role value in the request body.
+    // This prevents privilege-escalation via the public registration endpoint.
+    const role: UserRole = 'customer';
+
+    // Log a warning if someone attempted to supply a privileged role
+    if ((dto as any).role && (dto as any).role !== 'customer') {
+      logger.warn(
+        `Blocked privilege-escalation attempt: registration for ${dto.email} ` +
+        `tried to set role '${(dto as any).role}' — forced to 'customer'`,
+      );
+    }
 
     // 1. Check email uniqueness
     const { data: existing } = await supabase
@@ -321,6 +326,97 @@ export class AuthService {
     if (updateErr) throw new AppError('Failed to update password', 500);
 
     logger.info(`Password changed for user: ${userId}`);
+  }
+
+  // ─── Password Reset ─────────────────────────────────────────────────────────
+
+  /**
+   * Generates a password reset token for the given email.
+   * Stores the hashed token and expiry in the users table.
+   * Returns the raw token (in production, this would be emailed to the user).
+   */
+  async requestPasswordReset(email: string): Promise<{ message: string; resetToken?: string }> {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, is_active')
+      .eq('email', email.toLowerCase().trim())
+      .single();
+
+    if (error || !user) {
+      // Don't reveal whether email exists — return generic message
+      return { message: 'If an account with that email exists, a password reset link has been generated.' };
+    }
+
+    if (!user.is_active) {
+      return { message: 'If an account with that email exists, a password reset link has been generated.' };
+    }
+
+    // Generate a crypto-random token
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto.createHash('sha256').update(rawToken).digest('hex');
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
+
+    // Store token hash and expiry in the users table
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({
+        reset_token_hash: tokenHash,
+        reset_token_expires: expiresAt,
+      })
+      .eq('id', user.id);
+
+    if (updateErr) {
+      logger.error('Failed to store reset token', updateErr);
+      throw new AppError('Failed to process password reset', 500);
+    }
+
+    logger.info(`Password reset requested for: ${user.email}`);
+
+    // In production, send email with reset link. For demo, return token directly.
+    return {
+      message: 'If an account with that email exists, a password reset link has been generated.',
+      resetToken: rawToken,
+    };
+  }
+
+  /**
+   * Resets password using a valid reset token.
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
+
+    // Find user with matching, non-expired token
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, reset_token_hash, reset_token_expires')
+      .eq('reset_token_hash', tokenHash)
+      .single();
+
+    if (error || !user) {
+      throw new AppError('Invalid or expired password reset token', 400);
+    }
+
+    // Check expiry
+    if (new Date(user.reset_token_expires) < new Date()) {
+      throw new AppError('Password reset token has expired. Please request a new one.', 400);
+    }
+
+    // Hash and update password, clear reset token
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({
+        password_hash: newHash,
+        reset_token_hash: null,
+        reset_token_expires: null,
+      })
+      .eq('id', user.id);
+
+    if (updateErr) {
+      throw new AppError('Failed to reset password', 500);
+    }
+
+    logger.info(`Password reset completed for user: ${user.id}`);
   }
 
   // ─── JWT Utilities ─────────────────────────────────────────────────────────

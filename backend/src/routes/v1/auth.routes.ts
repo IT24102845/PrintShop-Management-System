@@ -39,11 +39,9 @@ router.post(
         pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
       },
       password:  { type: 'string', minLength: 8, maxLength: 128 },
-      role:      {
-        type:     'string',
-        required: false,
-        enum:     ['customer', 'manager', 'customer_service', 'design_staff', 'production_staff', 'inventory_staff', 'admin'],
-      },
+      // SECURITY: 'role' intentionally removed from public registration.
+      // The backend always assigns role='customer'. Any supplied role is ignored.
+      // Staff accounts must be created via POST /api/v1/auth/staff (admin/manager only).
       phone:     { type: 'string', required: false, pattern: /^(\+?[0-9\s\-\(\)]{7,20})?$/, maxLength: 20 },
       address:   { type: 'string', required: false, maxLength: 500 },
       company:   { type: 'string', required: false, maxLength: 255 },

@@ -90,6 +90,7 @@
             <th>Reference / Notes</th>
             <th>Status</th>
             <th style="text-align: right;">Amount</th>
+            <th class="col-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -129,6 +130,18 @@
               <td style="text-align: right;" class="font-bold text-main">
                 {{ p.amount | currency:'LKR ':'symbol':'1.2-2' }}
               </td>
+              <td class="col-actions">
+                <div class="row-actions">
+                  <button type="button" class="action-btn action-edit" [id]="'edit-payment-' + p.id"
+                          (click)="openEditModal(p)" title="Edit payment" aria-label="Edit payment">
+                    <span class="material-icons-outlined">edit</span>
+                  </button>
+                  <button type="button" class="action-btn action-delete" [id]="'delete-payment-' + p.id"
+                          (click)="openDeleteConfirm(p)" title="Delete payment" aria-label="Delete payment">
+                    <span class="material-icons-outlined">delete</span>
+                  </button>
+                </div>
+              </td>
             </tr>
           }
         </tbody>
@@ -153,25 +166,33 @@
 
 </div>
 
-<!-- Record Payment Modal -->
+<!-- Record / Edit Payment Modal -->
 @if (showModal()) {
-  <div class="modal-overlay" (click)="showModal.set(false)">
+  <div class="modal-overlay" (click)="closeModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3>Record Client Payment</h3>
-        <button class="modal-close" (click)="showModal.set(false)">✕</button>
+        <h3>{{ isEditMode ? 'Edit Payment' : 'Record Client Payment' }}</h3>
+        <button class="modal-close" (click)="closeModal()">✕</button>
       </div>
       <form [formGroup]="paymentForm" (ngSubmit)="onSubmit()">
         <div class="modal-body">
           <div class="form-group mb-3">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem">
               <label class="form-label" style="margin-bottom:0">Order *</label>
-              <button type="button" class="btn-text-toggle" (click)="setManualOrderMode(!manualOrderMode)" style="font-size:0.78125rem; color:var(--primary-color, #0071e3); background:none; border:none; cursor:pointer; text-decoration:underline;">
-                {{ manualOrderMode ? '← Choose from Orders list' : 'Or enter UUID manually' }}
-              </button>
+              @if (!isEditMode) {
+                <button type="button" class="btn-text-toggle" (click)="setManualOrderMode(!manualOrderMode)" style="font-size:0.78125rem; color:var(--primary-color, #0071e3); background:none; border:none; cursor:pointer; text-decoration:underline;">
+                  {{ manualOrderMode ? '← Choose from Orders list' : 'Or enter UUID manually' }}
+                </button>
+              }
             </div>
 
-            @if (!manualOrderMode) {
+            @if (isEditMode) {
+              <div class="locked-order">
+                <span class="material-icons-outlined">lock</span>
+                <span class="locked-order-id">{{ editingPayment.order_id }}</span>
+              </div>
+              <small class="text-muted" style="font-size:0.75rem; display:block; margin-top:0.25rem;">A payment cannot be moved to a different order.</small>
+            } @else if (!manualOrderMode) {
               <select class="form-select" formControlName="order_id" (change)="onOrderSelect($event)">
                 <option value="">
                   {{ isLoadingOrders ? 'Loading available orders…' : '-- Select an Order to Pay (' + orders.length + ' available) --' }}
@@ -241,12 +262,57 @@
         </div>
 
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" (click)="showModal.set(false)">Cancel</button>
+          <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
           <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || paymentForm.invalid">
-            {{ isSubmitting ? 'Recording...' : 'Record Payment' }}
+            @if (isEditMode) {
+              {{ isSubmitting ? 'Saving...' : 'Save Changes' }}
+            } @else {
+              {{ isSubmitting ? 'Recording...' : 'Record Payment' }}
+            }
           </button>
         </div>
       </form>
+    </div>
+  </div>
+}
+
+<!-- Delete Payment Confirmation Modal -->
+@if (deletingPayment) {
+  <div class="modal-overlay" (click)="closeDeleteConfirm()">
+    <div class="modal-card modal-card-sm" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3 class="danger-title">
+          <span class="material-icons-outlined">delete_forever</span> Delete Payment
+        </h3>
+        <button class="modal-close" (click)="closeDeleteConfirm()">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="delete-prompt">Are you sure you want to permanently delete this payment record?</p>
+        <div class="delete-summary">
+          <strong class="delete-amount">{{ deletingPayment.amount | currency:'LKR ':'symbol':'1.2-2' }}</strong>
+          <div class="delete-meta">
+            Order #{{ (deletingPayment.order_id || '').substring(0, 8) }}
+            · {{ deletingPayment.payment_method?.replace('_', ' ') | titlecase }}
+            · {{ deletingPayment.payment_status?.replace('_', ' ') | titlecase }}
+          </div>
+          @if (deletingPayment.orders?.customers?.users?.full_name) {
+            <div class="delete-meta">Client: {{ deletingPayment.orders.customers.users.full_name }}</div>
+          }
+          @if (deletingPayment.transaction_ref) {
+            <div class="delete-meta">Ref: {{ deletingPayment.transaction_ref }}</div>
+          }
+        </div>
+        @if (deletingPayment.payment_status === 'completed') {
+          <p class="delete-warning">This is a completed payment — deleting it will reduce realized revenue.</p>
+        }
+        <p class="delete-warning" style="margin:0">⚠️ This action cannot be undone.</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeDeleteConfirm()">Cancel</button>
+        <button type="button" id="confirm-delete-payment" class="btn btn-danger" (click)="confirmDelete()" [disabled]="isDeleting">
+          {{ isDeleting ? 'Deleting…' : 'Yes, Delete Payment' }}
+        </button>
+      </div>
     </div>
   </div>
 }

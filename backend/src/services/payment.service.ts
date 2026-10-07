@@ -20,7 +20,7 @@
 
 import { supabase } from '../config/supabase';
 import { AppError, PaginatedResponse, PaginationQuery } from '../types';
-import { Payment, PaymentMethod, PaymentStatus } from '../models/payment.model';
+import { Payment, PaymentMethod, PaymentStatus, UpdatePaymentDto } from '../models/payment.model';
 import logger from '../utils/logger';
 
 export interface CreateStaffPaymentDto {
@@ -41,6 +41,16 @@ export interface PaymentSummaryDto {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyRecord = Record<string, any>;
+
+/** Statuses where money has not (yet) been received — paid_at must be cleared */
+const UNSETTLED_STATUSES: PaymentStatus[] = ['pending', 'processing', 'failed'];
+
+/** Shared select clause that joins order + customer details for display */
+const PAYMENT_WITH_ORDER_SELECT = `*,
+  orders (
+    id, service_type, quantity, status,
+    customers ( users ( full_name, email ) )
+  )`;
 
 // Main business logic is handled here.
 // Reads data from Supabase PostgreSQL.
@@ -148,6 +158,125 @@ export class PaymentService {
     }
 
     return (data ?? []) as Payment[];
+  }
+
+  /**
+   * Get a single payment by ID (with order and customer details)
+   */
+  async getPaymentById(id: string): Promise<AnyRecord> {
+    const { data, error } = await supabase
+      .from('payments')
+      .select(PAYMENT_WITH_ORDER_SELECT)
+      .eq('id', id)
+      .maybeSingle();
+
+    if (error) {
+      logger.error(`Failed to fetch payment ${id}`, error);
+      throw new AppError('Failed to retrieve payment', 500);
+    }
+
+    if (!data) {
+      throw new AppError('Payment not found', 404);
+    }
+
+    return data as AnyRecord;
+  }
+
+  /**
+   * Update an existing payment.
+   * - order_id is immutable (financial records stay tied to their order).
+   * - paid_at is kept consistent with status: stamped when moving to
+   *   'completed', cleared when moving back to pending/processing/failed.
+   */
+  async updatePayment(id: string, dto: UpdatePaymentDto): Promise<Payment> {
+    // 1. Ensure payment exists
+    const { data: existing, error: findError } = await supabase
+      .from('payments')
+      .select('id, payment_status, paid_at')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (findError) {
+      logger.error(`Failed to look up payment ${id}`, findError);
+      throw new AppError('Failed to update payment', 500);
+    }
+    if (!existing) {
+      throw new AppError('Payment not found', 404);
+    }
+
+    // 2. Build a whitelist-only update payload
+    const updates: AnyRecord = {};
+
+    if (dto.amount !== undefined) {
+      if (typeof dto.amount !== 'number' || dto.amount <= 0) {
+        throw new AppError('Payment amount must be greater than zero', 400);
+      }
+      updates.amount = dto.amount;
+    }
+    if (dto.payment_method !== undefined)  updates.payment_method  = dto.payment_method;
+    if (dto.transaction_ref !== undefined) updates.transaction_ref = dto.transaction_ref?.trim() || null;
+    if (dto.receipt_url !== undefined)     updates.receipt_url     = dto.receipt_url?.trim() || null;
+    if (dto.notes !== undefined)           updates.notes           = dto.notes?.trim() || null;
+
+    if (dto.payment_status !== undefined) {
+      updates.payment_status = dto.payment_status;
+      if (dto.payment_status === 'completed' && !existing.paid_at) {
+        updates.paid_at = new Date().toISOString();
+      } else if (UNSETTLED_STATUSES.includes(dto.payment_status)) {
+        updates.paid_at = null;
+      }
+    }
+
+    // Explicit paid_at override (e.g. back-dating a cash receipt)
+    if (dto.paid_at !== undefined) {
+      if (dto.paid_at !== null && Number.isNaN(Date.parse(dto.paid_at))) {
+        throw new AppError("'paid_at' must be a valid ISO date", 400);
+      }
+      updates.paid_at = dto.paid_at;
+    }
+
+    if (Object.keys(updates).length === 0) {
+      throw new AppError('No valid fields provided for update', 400);
+    }
+
+    // 3. Persist
+    const { data: updated, error: updateError } = await supabase
+      .from('payments')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError || !updated) {
+      logger.error(`Failed to update payment ${id}`, updateError);
+      throw new AppError('Failed to update payment', 500);
+    }
+
+    logger.info(`Payment ${id} updated [${Object.keys(updates).join(', ')}]`);
+    return updated as Payment;
+  }
+
+  /**
+   * Permanently delete a payment record.
+   * Route layer restricts this to admin/manager roles.
+   */
+  async deletePayment(id: string): Promise<void> {
+    const { data, error } = await supabase
+      .from('payments')
+      .delete()
+      .eq('id', id)
+      .select('id');
+
+    if (error) {
+      logger.error(`Failed to delete payment ${id}`, error);
+      throw new AppError('Failed to delete payment', 500);
+    }
+
+    if (!data || data.length === 0) {
+      throw new AppError('Payment not found', 404);
+    }
+
+    logger.info(`Payment ${id} deleted`);
   }
 
   /**

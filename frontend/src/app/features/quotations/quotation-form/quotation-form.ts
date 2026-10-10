@@ -139,8 +139,10 @@ export class QuotationForm implements OnInit {
   get f() { return this.form.controls; }
 
   onSubmit() {
+    this.form.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       this.toast.error('Please complete all required fields.');
       return;
     }

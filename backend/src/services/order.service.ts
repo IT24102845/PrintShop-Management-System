@@ -250,7 +250,8 @@ export class OrderService {
 
     // Search by customer name / email (two-step lookup)
     if (query.search?.trim()) {
-      const term = `%${query.search.trim()}%`;
+      const cleanSearch = query.search.trim().replace(/[,()]/g, '');
+      const term = `%${cleanSearch}%`;
 
       const { data: matchedUsers } = await supabase
         .from('users')
@@ -445,8 +446,8 @@ export class OrderService {
 
     // If customer, verify ownership
     if (userRole === 'customer') {
-      const orderUserId = (existing.customers as any)?.user_id;
-      if (orderUserId && orderUserId !== userId) {
+      const customer = await customerService.findCustomerByUserId(userId);
+      if (existing.customer_id !== customer.id) {
         throw new AppError('Access denied: You can only update your own order artwork', 403);
       }
     } else {

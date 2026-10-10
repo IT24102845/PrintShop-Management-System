@@ -80,7 +80,7 @@ export class SupplierService {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((query as any).search?.trim()) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      dbQuery = dbQuery.ilike('supplier_name', `%${(query as any).search}%`);
+      dbQuery = dbQuery.ilike('supplier_name', `%${(query as any).search.trim().replace(/[,()]/g, '')}%`);
     }
 
     const { data, error, count } = await dbQuery

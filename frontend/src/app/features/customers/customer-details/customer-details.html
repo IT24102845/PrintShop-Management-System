@@ -63,6 +63,9 @@
         <button class="btn btn-secondary btn-sm" (click)="openEditModal()">
           <span class="material-icons-outlined">edit</span> Edit Profile
         </button>
+        <button class="btn btn-secondary btn-sm" (click)="openPasswordModal()" title="Change customer password">
+          <span class="material-icons-outlined">lock_reset</span> Change Password
+        </button>
         <button class="btn btn-secondary btn-sm" (click)="toggleActive()">
           {{ customer.is_active !== false ? 'Deactivate' : 'Activate' }}
         </button>
@@ -262,19 +265,33 @@
           <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Full Name *</label>
-              <input class="form-control" formControlName="full_name" placeholder="e.g. Lasitha Rajapaksha" />
-              @if (editForm.get('full_name')?.touched && editForm.get('full_name')?.hasError('required')) {
-                <span class="form-error">Full name is required</span>
+              <input class="form-control" formControlName="full_name" placeholder="e.g. Lasitha Rajapaksha"
+                     [class.is-invalid]="editForm.get('full_name')?.touched && editForm.get('full_name')?.invalid" />
+              @if (editForm.get('full_name')?.touched && editForm.get('full_name')?.invalid) {
+                @if (editForm.get('full_name')?.hasError('required')) {
+                  <span class="form-error">Full name is required</span>
+                } @else if (editForm.get('full_name')?.hasError('minlength')) {
+                  <span class="form-error">Name must be at least 2 characters</span>
+                } @else if (editForm.get('full_name')?.hasError('pattern')) {
+                  <span class="form-error">Name can only contain letters, spaces, hyphens and apostrophes</span>
+                } @else if (editForm.get('full_name')?.hasError('maxlength')) {
+                  <span class="form-error">Name must not exceed 100 characters</span>
+                }
               }
             </div>
 
             <div class="form-group">
               <label class="form-label">Email Address *</label>
-              <input class="form-control" type="email" formControlName="email" placeholder="client@example.com" />
-              @if (editForm.get('email')?.touched && editForm.get('email')?.hasError('required')) {
-                <span class="form-error">Email is required</span>
-              } @else if (editForm.get('email')?.touched && editForm.get('email')?.hasError('pattern')) {
-                <span class="form-error">Enter a valid email address</span>
+              <input class="form-control" type="email" formControlName="email" placeholder="client@example.com"
+                     [class.is-invalid]="editForm.get('email')?.touched && editForm.get('email')?.invalid" />
+              @if (editForm.get('email')?.touched && editForm.get('email')?.invalid) {
+                @if (editForm.get('email')?.hasError('required')) {
+                  <span class="form-error">Email is required</span>
+                } @else if (editForm.get('email')?.hasError('pattern')) {
+                  <span class="form-error">Enter a valid email address</span>
+                } @else if (editForm.get('email')?.hasError('maxlength')) {
+                  <span class="form-error">Email must not exceed 255 characters</span>
+                }
               }
             </div>
           </div>
@@ -282,18 +299,34 @@
           <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Phone Number</label>
-              <input class="form-control" formControlName="phone" placeholder="+94 77 123 4567" />
+              <input class="form-control" type="tel" formControlName="phone" placeholder="077 123 4567 or +94 77 123 4567"
+                     [class.is-invalid]="editForm.get('phone')?.touched && editForm.get('phone')?.invalid" />
+              @if (editForm.get('phone')?.touched && editForm.get('phone')?.invalid) {
+                @if (editForm.get('phone')?.hasError('pattern')) {
+                  <span class="form-error">Enter a valid phone number (e.g. 077 123 4567 or +94 77 123 4567)</span>
+                } @else if (editForm.get('phone')?.hasError('maxlength')) {
+                  <span class="form-error">Phone number must not exceed 20 characters</span>
+                }
+              }
             </div>
 
             <div class="form-group">
               <label class="form-label">Company / Organization</label>
-              <input class="form-control" formControlName="company" placeholder="e.g. Apex Prints Ltd" />
+              <input class="form-control" formControlName="company" placeholder="e.g. Apex Prints Ltd"
+                     [class.is-invalid]="editForm.get('company')?.touched && editForm.get('company')?.invalid" />
+              @if (editForm.get('company')?.touched && editForm.get('company')?.invalid) {
+                <span class="form-error">Company name must not exceed 255 characters</span>
+              }
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Address</label>
-            <input class="form-control" formControlName="address" placeholder="123 Main Street, City" />
+            <input class="form-control" formControlName="address" placeholder="123 Main Street, City"
+                   [class.is-invalid]="editForm.get('address')?.touched && editForm.get('address')?.invalid" />
+            @if (editForm.get('address')?.touched && editForm.get('address')?.invalid) {
+              <span class="form-error">Address must not exceed 500 characters</span>
+            }
           </div>
 
           <div class="form-group">
@@ -306,7 +339,11 @@
 
           <div class="form-group">
             <label class="form-label">Notes & Preferences</label>
-            <textarea class="form-control" formControlName="notes" rows="3" placeholder="Add specific notes, billing requirements, or special instructions..."></textarea>
+            <textarea class="form-control" formControlName="notes" rows="3" placeholder="Add specific notes, billing requirements, or special instructions..."
+                      [class.is-invalid]="editForm.get('notes')?.touched && editForm.get('notes')?.invalid"></textarea>
+            @if (editForm.get('notes')?.touched && editForm.get('notes')?.invalid) {
+              <span class="form-error">Notes must not exceed 1000 characters</span>
+            }
           </div>
         </div>
 
@@ -323,3 +360,90 @@
   </div>
 }
 
+<!-- Change Password Modal -->
+@if (showPasswordModal) {
+  <div class="modal-overlay" (click)="closePasswordModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2>
+          <span class="material-icons-outlined" style="vertical-align:middle;margin-right:6px">lock_reset</span>
+          Change Customer Password
+        </h2>
+        <button class="btn btn-ghost btn-sm icon-btn" (click)="closePasswordModal()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+
+      <form [formGroup]="passwordForm" (ngSubmit)="onSubmitPassword()">
+        <div class="modal-body">
+
+          <div class="password-notice">
+            <span class="material-icons-outlined">info</span>
+            <p>You are setting a new password for <strong>{{ customer?.full_name }}</strong>. The customer will be able to log in with this new password immediately.</p>
+          </div>
+
+          <!-- New Password -->
+          <div class="form-group">
+            <label class="form-label">New Password *</label>
+            <div class="password-input-wrapper">
+              <input
+                class="form-control"
+                [type]="showNewPassword ? 'text' : 'password'"
+                formControlName="new_password"
+                placeholder="Min. 8 characters"
+                autocomplete="new-password"
+                [class.is-invalid]="passwordForm.get('new_password')?.touched && passwordForm.get('new_password')?.invalid"
+              />
+              <button type="button" class="password-toggle" (click)="toggleNewPasswordVisibility()" tabindex="-1">
+                <span class="material-icons-outlined">{{ showNewPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            @if (passwordForm.get('new_password')?.touched && passwordForm.get('new_password')?.invalid) {
+              @if (passwordForm.get('new_password')?.hasError('required')) {
+                <span class="form-error">New password is required</span>
+              } @else if (passwordForm.get('new_password')?.hasError('minlength')) {
+                <span class="form-error">Password must be at least 8 characters</span>
+              } @else if (passwordForm.get('new_password')?.hasError('maxlength')) {
+                <span class="form-error">Password must not exceed 128 characters</span>
+              }
+            }
+          </div>
+
+          <!-- Confirm Password -->
+          <div class="form-group">
+            <label class="form-label">Confirm New Password *</label>
+            <div class="password-input-wrapper">
+              <input
+                class="form-control"
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                formControlName="confirm_password"
+                placeholder="Re-enter new password"
+                autocomplete="new-password"
+                [class.is-invalid]="(passwordForm.get('confirm_password')?.touched && passwordForm.get('confirm_password')?.invalid) || (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirm_password')?.touched)"
+              />
+              <button type="button" class="password-toggle" (click)="toggleConfirmPasswordVisibility()" tabindex="-1">
+                <span class="material-icons-outlined">{{ showConfirmPassword ? 'visibility_off' : 'visibility' }}</span>
+              </button>
+            </div>
+            @if (passwordForm.get('confirm_password')?.touched && passwordForm.get('confirm_password')?.hasError('required')) {
+              <span class="form-error">Please confirm the new password</span>
+            } @else if (passwordForm.hasError('passwordMismatch') && passwordForm.get('confirm_password')?.touched) {
+              <span class="form-error">Passwords do not match</span>
+            }
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" (click)="closePasswordModal()" [disabled]="isPasswordSubmitting">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary" [disabled]="isPasswordSubmitting">
+            <span class="material-icons-outlined" style="font-size:18px;vertical-align:middle">lock_reset</span>
+            {{ isPasswordSubmitting ? 'Updating...' : 'Update Password' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

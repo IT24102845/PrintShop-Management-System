@@ -42,10 +42,13 @@ export interface CreatePaymentDto {
   notes?:          string;
 }
 
+/** Editable fields — order_id is intentionally immutable once recorded */
 export interface UpdatePaymentDto {
-  payment_status?: PaymentStatus;
-  transaction_ref?: string;
-  receipt_url?:    string;
-  paid_at?:        string;
-  notes?:          string;
+  amount?:          number;
+  payment_method?:  PaymentMethod;
+  payment_status?:  PaymentStatus;
+  transaction_ref?: string | null;
+  receipt_url?:     string | null;
+  paid_at?:         string | null;
+  notes?:           string | null;
 }

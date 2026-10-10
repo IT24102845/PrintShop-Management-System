@@ -161,8 +161,10 @@ export class OfferList implements OnInit {
   }
 
   onSubmit() {
+    this.offerForm.markAllAsTouched();
+
     if (this.offerForm.invalid) {
-      this.offerForm.markAllAsTouched();
+      this.toast.error('Please fill in all required fields.');
       return;
     }
 

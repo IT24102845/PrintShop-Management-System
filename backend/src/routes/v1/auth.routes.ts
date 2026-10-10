@@ -14,12 +14,17 @@
 // Protected: GET /me, PATCH /change-password
 // =============================================================================
 
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { authController } from '../../controllers/auth.controller';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate } from '../../middleware/validation.middleware';
+import { AppError } from '../../types';
 
 const router = Router();
+
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_REGEX = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+const NAME_REGEX  = /^[a-zA-Z\s\-'.]{2,100}$/;
 
 // ─── POST /api/v1/auth/register ───────────────────────────────────────────────
 /**
@@ -33,16 +38,16 @@ router.post(
   '/register',
   validate({
     body: {
-      full_name: { type: 'string', minLength: 2, maxLength: 255 },
+      full_name: { type: 'string', minLength: 2, maxLength: 100, pattern: NAME_REGEX },
       email:     {
         type:    'string',
-        pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        pattern: EMAIL_REGEX,
       },
       password:  { type: 'string', minLength: 8, maxLength: 128 },
       // SECURITY: 'role' intentionally removed from public registration.
       // The backend always assigns role='customer'. Any supplied role is ignored.
       // Staff accounts must be created via POST /api/v1/auth/staff (admin/manager only).
-      phone:     { type: 'string', required: false, pattern: /^(\+?[0-9\s\-\(\)]{7,20})?$/, maxLength: 20 },
+      phone:     { type: 'string', required: false, pattern: PHONE_REGEX, maxLength: 20 },
       address:   { type: 'string', required: false, maxLength: 500 },
       company:   { type: 'string', required: false, maxLength: 255 },
     },
@@ -63,17 +68,17 @@ router.post(
   authorize('admin', 'manager'),
   validate({
     body: {
-      full_name: { type: 'string', minLength: 2, maxLength: 255 },
+      full_name: { type: 'string', minLength: 2, maxLength: 100, pattern: NAME_REGEX },
       email:     {
         type:    'string',
-        pattern: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+        pattern: EMAIL_REGEX,
       },
       password:  { type: 'string', minLength: 8, maxLength: 128 },
       role:      {
         type: 'string',
         enum: ['admin', 'manager', 'customer_service', 'design_staff', 'production_staff', 'inventory_staff'],
       },
-      phone:     { type: 'string', required: false, pattern: /^(\+?[0-9\s\-\(\)]{7,20})?$/, maxLength: 20 },
+      phone:     { type: 'string', required: false, pattern: PHONE_REGEX, maxLength: 20 },
     },
   }),
   (req, res, next) => authController.createStaff(req, res, next),
@@ -96,6 +101,61 @@ router.post(
     },
   }),
   (req, res, next) => authController.login(req, res, next),
+);
+
+// ─── Simple in-memory rate limiter for reset emails ──────────────────────────
+const RESET_WINDOW_MS = 15 * 60 * 1000;
+const RESET_MAX_REQUESTS = 3;
+const resetAttempts = new Map<string, number[]>();
+
+function limitResetRequests(req: Request, _res: Response, next: NextFunction): void {
+  const email = String(req.body?.email ?? '').toLowerCase().trim();
+  const key = `${req.ip}|${email}`;
+  const now = Date.now();
+  const recent = (resetAttempts.get(key) ?? []).filter(t => now - t < RESET_WINDOW_MS);
+
+  if (recent.length >= RESET_MAX_REQUESTS) {
+    return next(new AppError('Too many reset requests. Please wait 15 minutes and try again.', 429));
+  }
+  recent.push(now);
+  resetAttempts.set(key, recent);
+  next();
+}
+
+// ─── POST /api/v1/auth/forgot-password ────────────────────────────────────────
+/**
+ * @route   POST /api/v1/auth/forgot-password
+ * @desc    Email a one-time password reset link (valid 1 hour)
+ * @access  Public
+ * @body    { email }
+ */
+router.post(
+  '/forgot-password',
+  validate({
+    body: {
+      email: { type: 'string', pattern: EMAIL_REGEX, maxLength: 255 },
+    },
+  }),
+  limitResetRequests,
+  (req, res, next) => authController.forgotPassword(req, res, next),
+);
+
+// ─── POST /api/v1/auth/reset-password ─────────────────────────────────────────
+/**
+ * @route   POST /api/v1/auth/reset-password
+ * @desc    Set a new password using the emailed reset token
+ * @access  Public
+ * @body    { token, new_password }
+ */
+router.post(
+  '/reset-password',
+  validate({
+    body: {
+      token:        { type: 'string', pattern: /^[a-f0-9]{64}$/ },
+      new_password: { type: 'string', minLength: 8, maxLength: 128 },
+    },
+  }),
+  (req, res, next) => authController.resetPassword(req, res, next),
 );
 
 // ─── GET /api/v1/auth/me ──────────────────────────────────────────────────────

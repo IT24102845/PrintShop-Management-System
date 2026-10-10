@@ -1,7 +1,8 @@
-import { Component, computed, ElementRef, HostListener, signal } from '@angular/core';
+import { Component, computed, ElementRef, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../core/services/auth.service';
+import { ThemeService } from '../../../core/services/theme.service';
 import { STAFF_NAV_ITEMS } from '../nav.config';
 
 @Component({
@@ -12,7 +13,9 @@ import { STAFF_NAV_ITEMS } from '../nav.config';
   styleUrl: './top-nav.scss',
 })
 export class TopNav {
+  themeService = inject(ThemeService);
   showProfileMenu = signal(false);
+
 
   user = computed(() => this.authService.currentUser());
 

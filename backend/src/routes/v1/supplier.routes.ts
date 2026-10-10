@@ -16,6 +16,9 @@ import { validate } from '../../middleware/validation.middleware';
 
 const router = Router();
 
+const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_REGEX = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+
 // Only admin and manager can access supplier routes
 router.use(authenticate, authorize('admin', 'manager'));
 
@@ -28,10 +31,10 @@ router.post(
   '/',
   validate({
     body: {
-      supplier_name: { type: 'string', minLength: 2 },
-      phone:         { type: 'string', required: false },
-      email:         { type: 'string', pattern: /^\S+@\S+\.\S+$/, required: false },
-      address:       { type: 'string', required: false },
+      supplier_name: { type: 'string', minLength: 2, maxLength: 255 },
+      phone:         { type: 'string', pattern: PHONE_REGEX, maxLength: 20, required: false },
+      email:         { type: 'string', pattern: EMAIL_REGEX, maxLength: 255, required: false },
+      address:       { type: 'string', maxLength: 500, required: false },
     },
   }),
   (req, res, next) => supplierController.createSupplier(req, res, next)
@@ -63,9 +66,9 @@ router.patch(
   '/:id',
   validate({
     body: {
-      supplier_name: { type: 'string', minLength: 2, required: false },
-      phone:         { type: 'string', required: false },
-      email:         { type: 'string', pattern: /^\S+@\S+\.\S+$/, required: false },
+      supplier_name: { type: 'string', minLength: 2, maxLength: 255, required: false },
+      phone:         { type: 'string', pattern: PHONE_REGEX, maxLength: 20, required: false },
+      email:         { type: 'string', pattern: EMAIL_REGEX, maxLength: 255, required: false },
       is_active:     { type: 'boolean', required: false },
     },
   }),

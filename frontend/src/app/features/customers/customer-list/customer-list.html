@@ -6,11 +6,6 @@
       <p>Manage all registered customers</p>
     </div>
     <div class="page-header-actions">
-      @if (authService.isAdminOrManager()) {
-        <a routerLink="/app/customers/new" [queryParams]="{ type: 'staff' }" class="btn btn-secondary">
-          <span class="material-icons-outlined">badge</span> New Staff Member
-        </a>
-      }
       <button class="btn btn-primary" (click)="openCreateModal()">
         <span class="material-icons-outlined">person_add</span> New Customer
       </button>
@@ -143,19 +138,33 @@
           <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Full Name *</label>
-              <input class="form-control" formControlName="full_name" placeholder="e.g. Lasitha Rajapaksha" />
-              @if (customerForm.get('full_name')?.touched && customerForm.get('full_name')?.hasError('required')) {
-                <span class="form-error">Full name is required</span>
+              <input class="form-control" formControlName="full_name" placeholder="e.g. Lasitha Rajapaksha"
+                     [class.is-invalid]="customerForm.get('full_name')?.touched && customerForm.get('full_name')?.invalid" />
+              @if (customerForm.get('full_name')?.touched && customerForm.get('full_name')?.invalid) {
+                @if (customerForm.get('full_name')?.hasError('required')) {
+                  <span class="form-error">Full name is required</span>
+                } @else if (customerForm.get('full_name')?.hasError('minlength')) {
+                  <span class="form-error">Name must be at least 2 characters</span>
+                } @else if (customerForm.get('full_name')?.hasError('pattern')) {
+                  <span class="form-error">Name can only contain letters, spaces, hyphens and apostrophes</span>
+                } @else if (customerForm.get('full_name')?.hasError('maxlength')) {
+                  <span class="form-error">Name must not exceed 100 characters</span>
+                }
               }
             </div>
 
             <div class="form-group">
               <label class="form-label">Email Address *</label>
-              <input class="form-control" type="email" formControlName="email" placeholder="client@example.com" />
-              @if (customerForm.get('email')?.touched && customerForm.get('email')?.hasError('required')) {
-                <span class="form-error">Email is required</span>
-              } @else if (customerForm.get('email')?.touched && customerForm.get('email')?.hasError('pattern')) {
-                <span class="form-error">Enter a valid email address</span>
+              <input class="form-control" type="email" formControlName="email" placeholder="client@example.com"
+                     [class.is-invalid]="customerForm.get('email')?.touched && customerForm.get('email')?.invalid" />
+              @if (customerForm.get('email')?.touched && customerForm.get('email')?.invalid) {
+                @if (customerForm.get('email')?.hasError('required')) {
+                  <span class="form-error">Email is required</span>
+                } @else if (customerForm.get('email')?.hasError('pattern')) {
+                  <span class="form-error">Enter a valid email address</span>
+                } @else if (customerForm.get('email')?.hasError('maxlength')) {
+                  <span class="form-error">Email must not exceed 255 characters</span>
+                }
               }
             </div>
           </div>
@@ -163,26 +172,46 @@
           <div class="form-row-2">
             <div class="form-group">
               <label class="form-label">Phone Number</label>
-              <input class="form-control" formControlName="phone" placeholder="+94 77 123 4567" />
+              <input class="form-control" type="tel" formControlName="phone" placeholder="077 123 4567 or +94 77 123 4567"
+                     [class.is-invalid]="customerForm.get('phone')?.touched && customerForm.get('phone')?.invalid" />
+              @if (customerForm.get('phone')?.touched && customerForm.get('phone')?.invalid) {
+                @if (customerForm.get('phone')?.hasError('pattern')) {
+                  <span class="form-error">Enter a valid phone number (e.g. 077 123 4567 or +94 77 123 4567)</span>
+                } @else if (customerForm.get('phone')?.hasError('maxlength')) {
+                  <span class="form-error">Phone number must not exceed 20 characters</span>
+                }
+              }
             </div>
 
             <div class="form-group">
               <label class="form-label">Company / Organization</label>
-              <input class="form-control" formControlName="company" placeholder="e.g. Apex Prints Ltd" />
+              <input class="form-control" formControlName="company" placeholder="e.g. Apex Prints Ltd"
+                     [class.is-invalid]="customerForm.get('company')?.touched && customerForm.get('company')?.invalid" />
+              @if (customerForm.get('company')?.touched && customerForm.get('company')?.invalid) {
+                <span class="form-error">Company name must not exceed 255 characters</span>
+              }
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Address</label>
-            <input class="form-control" formControlName="address" placeholder="123 Main Street, City" />
+            <input class="form-control" formControlName="address" placeholder="123 Main Street, City"
+                   [class.is-invalid]="customerForm.get('address')?.touched && customerForm.get('address')?.invalid" />
+            @if (customerForm.get('address')?.touched && customerForm.get('address')?.invalid) {
+              <span class="form-error">Address must not exceed 500 characters</span>
+            }
           </div>
 
           @if (!isEditing) {
             <div class="form-group">
               <label class="form-label">Password (Optional)</label>
-              <input class="form-control" type="password" formControlName="password" placeholder="Leave empty for default (Customer@123)" />
+              <input class="form-control" type="password" formControlName="password" placeholder="Leave empty for default (Customer@123)"
+                     [class.is-invalid]="customerForm.get('password')?.touched && customerForm.get('password')?.invalid" />
+              @if (customerForm.get('password')?.touched && customerForm.get('password')?.hasError('minlength')) {
+                <span class="form-error">Password must be at least 6 characters</span>
+              }
               <span class="text-xs text-muted" style="margin-top: 0.25rem; display: block;">
-                If left empty, temporary password <code>Customer@123</code> will be assigned.
+                If left empty, temporary password <code>Customer&#64;123</code> will be assigned.
               </span>
             </div>
           }
@@ -199,7 +228,11 @@
 
           <div class="form-group">
             <label class="form-label">Notes & Preferences</label>
-            <textarea class="form-control" formControlName="notes" rows="2" placeholder="Delivery notes, corporate discounts, or special requirements..."></textarea>
+            <textarea class="form-control" formControlName="notes" rows="2" placeholder="Delivery notes, corporate discounts, or special requirements..."
+                      [class.is-invalid]="customerForm.get('notes')?.touched && customerForm.get('notes')?.invalid"></textarea>
+            @if (customerForm.get('notes')?.touched && customerForm.get('notes')?.invalid) {
+              <span class="form-error">Notes must not exceed 1000 characters</span>
+            }
           </div>
         </div>
 

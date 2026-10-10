@@ -34,7 +34,7 @@ import { StatusBadge } from '../../../shared/components/status-badge/status-badg
 
 const ORDER_STATUSES = [
   'pending', 'quoted', 'confirmed', 'design_review',
-  'in_production', 'quality_check', 'ready', 'delivered', 'cancelled'
+  'in_production', 'quality_check', 'ready', 'delivered', 'cancelled', 'COMPLETED'
 ];
 
 @Component({

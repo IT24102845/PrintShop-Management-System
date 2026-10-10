@@ -32,6 +32,9 @@ import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } 
 import { SupplierService, Supplier } from '../../../core/services/supplier.service';
 import { ToastService } from '../../../core/services/toast.service';
 
+const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_PATTERN = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+
 @Component({
   selector: 'app-supplier-list',
   standalone: true,
@@ -63,14 +66,14 @@ export class SupplierList implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {
     this.supplierForm = this.fb.group({
-      supplier_name: ['', Validators.required],
-      contact_person: [''],
-      email: ['', Validators.email],
-      phone: [''],
-      address: [''],
-      website: [''],
-      payment_terms: [''],
-      notes: [''],
+      supplier_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(255)]],
+      contact_person: ['', [Validators.maxLength(255)]],
+      email: ['', [Validators.pattern(EMAIL_PATTERN), Validators.maxLength(255)]],
+      phone: ['', [Validators.pattern(PHONE_PATTERN), Validators.maxLength(20)]],
+      address: ['', [Validators.maxLength(500)]],
+      website: ['', [Validators.maxLength(255)]],
+      payment_terms: ['', [Validators.maxLength(100)]],
+      notes: ['', [Validators.maxLength(1000)]],
     });
   }
 
@@ -129,8 +132,11 @@ export class SupplierList implements OnInit {
   }
 
   onSubmit() {
+    this.supplierForm.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.supplierForm.invalid) {
-      this.supplierForm.markAllAsTouched();
+      this.toast.error('Please fix the validation errors before saving.');
       return;
     }
 

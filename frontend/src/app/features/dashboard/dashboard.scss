@@ -121,3 +121,55 @@
 }
 
 .font-mono { font-family: 'Courier New', monospace; }
+
+// --- Pipeline Stage Box ---
+.pipeline-stage {
+  background: var(--bg-card-subtle);
+  padding: 0.75rem;
+  border-radius: 6px;
+  color: var(--text-main);
+  transition: background var(--transition-base);
+}
+
+// --- Dark mode KPI + Pipeline overrides ---
+[data-theme="dark"] {
+  .metric-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .pipeline-stage {
+    background: var(--bg-card) !important;
+    color: var(--text-main);
+  }
+  .dashboard-header-watermark {
+    mix-blend-mode: screen;
+    opacity: 0.1;
+  }
+}
+
+// =============================================================================
+// Dashboard - :host-context (ensures Angular encapsulation is pierced)
+// =============================================================================
+
+:host-context([data-theme="dark"]) {
+
+  .metric-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  .pipeline-stage {
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+  }
+
+  .dashboard-header-watermark {
+    mix-blend-mode: screen;
+    opacity: 0.1;
+  }
+
+  .action-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+}

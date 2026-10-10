@@ -92,8 +92,8 @@ export class InventoryService {
       
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     if ((query as any).search?.trim()) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      dbQuery = dbQuery.ilike('material_name', `%${(query as any).search}%`);
+      const cleanSearch = (query as any).search.trim().replace(/[,()]/g, '');
+      dbQuery = dbQuery.ilike('material_name', `%${cleanSearch}%`);
     }
 
     const { data, error, count } = await dbQuery
@@ -175,6 +175,34 @@ export class InventoryService {
     return updated as AnyRecord;
   }
 
+  // ─── Delete Material ───────────────────────────────────────────────────────
+
+  async deleteMaterial(id: string): Promise<void> {
+    // 1. Verify material exists
+    const { data: material, error: fetchError } = await supabase
+      .from('inventory_materials')
+      .select('id, material_name')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !material) {
+      throw new AppError('Material not found', 404);
+    }
+
+    // 2. Delete from inventory_materials
+    const { error: deleteError } = await supabase
+      .from('inventory_materials')
+      .delete()
+      .eq('id', id);
+
+    if (deleteError) {
+      logger.error(`Failed to delete inventory material ${id}`, deleteError);
+      throw new AppError('Failed to delete material', 500);
+    }
+
+    logger.info(`Inventory material ${id} (${material.material_name}) deleted successfully`);
+  }
+
   // ─── Dashboard ─────────────────────────────────────────────────────────────
 
   async getDashboardStats(): Promise<AnyRecord> {
@@ -189,8 +217,9 @@ export class InventoryService {
     }
 
     const stats = {
-      totalMaterials: inventory.length,
-      lowStockItems: 0,
+      totalMaterials:  inventory.length,
+      totalItems:      inventory.length,
+      lowStockItems:   0,
       outOfStockItems: 0,
     };
 

@@ -13,12 +13,15 @@
 
 import { Router } from 'express';
 import { customerController } from '../../controllers/customer.controller';
+import { authController } from '../../controllers/auth.controller';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
 import { validate, validateUUID } from '../../middleware/validation.middleware';
 
 const router = Router();
 
 const EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_REGEX = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+const NAME_REGEX  = /^[a-zA-Z\s\-'.]{2,100}$/;
 
 // Require authentication for all customer routes
 router.use(authenticate);
@@ -46,8 +49,8 @@ router.patch(
   authorize('customer'),
   validate({
     body: {
-      full_name: { type: 'string', minLength: 2, maxLength: 255, required: false },
-      phone:     { type: 'string', maxLength: 20, required: false },
+      full_name: { type: 'string', minLength: 2, maxLength: 100, pattern: NAME_REGEX, required: false },
+      phone:     { type: 'string', pattern: PHONE_REGEX, maxLength: 20, required: false },
       address:   { type: 'string', maxLength: 500, required: false },
       company:   { type: 'string', maxLength: 255, required: false },
     },
@@ -85,10 +88,10 @@ router.post(
   authorize('admin', 'manager', 'customer_service'),
   validate({
     body: {
-      full_name: { type: 'string', minLength: 2, maxLength: 255, required: true },
+      full_name: { type: 'string', minLength: 2, maxLength: 100, pattern: NAME_REGEX, required: true },
       email:     { type: 'string', pattern: EMAIL_REGEX, required: true },
       password:  { type: 'string', minLength: 6, maxLength: 128, required: false },
-      phone:     { type: 'string', maxLength: 20, required: false },
+      phone:     { type: 'string', pattern: PHONE_REGEX, maxLength: 20, required: false },
       address:   { type: 'string', maxLength: 500, required: false },
       company:   { type: 'string', maxLength: 255, required: false },
       notes:     { type: 'string', maxLength: 1000, required: false },
@@ -120,9 +123,9 @@ router.patch(
   validateUUID('id'),
   validate({
     body: {
-      full_name: { type: 'string', minLength: 2, maxLength: 255, required: false },
+      full_name: { type: 'string', minLength: 2, maxLength: 100, pattern: NAME_REGEX, required: false },
       email:     { type: 'string', pattern: EMAIL_REGEX, required: false },
-      phone:     { type: 'string', maxLength: 20, required: false },
+      phone:     { type: 'string', pattern: PHONE_REGEX, maxLength: 20, required: false },
       address:   { type: 'string', maxLength: 500, required: false },
       company:   { type: 'string', maxLength: 255, required: false },
       notes:     { type: 'string', maxLength: 1000, required: false },
@@ -130,6 +133,23 @@ router.patch(
     },
   }),
   (req, res, next) => customerController.updateCustomer(req, res, next)
+);
+
+/**
+ * @route   PATCH /api/v1/customers/:id/password
+ * @desc    Admin/Manager resets a customer's password (no current-password check)
+ * @access  Private (admin, manager)
+ */
+router.patch(
+  '/:id/password',
+  authorize('admin', 'manager'),
+  validateUUID('id'),
+  validate({
+    body: {
+      new_password: { type: 'string', minLength: 8, maxLength: 128 },
+    },
+  }),
+  (req, res, next) => authController.adminResetCustomerPassword(req, res, next),
 );
 
 /**

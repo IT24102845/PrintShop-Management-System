@@ -6,31 +6,24 @@
 // This TypeScript file controls the behaviour of the UI.
 // ============================================================
 
-/**
- * ============================================================================
- * CUSTOMER PROFILE COMPONENT - ACCOUNT & CONTACT MANAGEMENT
- * ============================================================================
- * 
- * ARCHITECTURAL CONTEXT:
- * Manages the client's contact and billing information, maintaining parity
- * between the authentication identity (`users` table) and the relational CRM
- * record (`customers` table).
- * 
- * KEY FEATURES:
- * 1. Dual-Table Synchronization: Updates made here update the customer's
- *    profile entity, ensuring delivery addresses and phone numbers automatically
- *    propagate to future printed delivery slips.
- * 2. Form State Integrity: Employs Angular Reactive Forms (`FormGroup`) with
- *    input validation and pristine/dirty change detection.
- * ============================================================================
- */
-
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CustomerService, CustomerProfile as ProfileData } from '../../../core/services/customer.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
+
+const PHONE_PATTERN = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+const NAME_PATTERN  = /^[a-zA-Z\s\-'.]{2,100}$/;
+
+function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+  const newPw   = control.get('new_password')?.value;
+  const confirm = control.get('confirm_password')?.value;
+  if (newPw && confirm && newPw !== confirm) {
+    return { passwordMismatch: true };
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-customer-profile',
@@ -69,10 +62,10 @@ import { ToastService } from '../../../core/services/toast.service';
           </div>
         </div>
 
-        <!-- Edit Form Card -->
-        <div class="card p-4">
+        <!-- Edit Profile Card -->
+        <div class="card p-4 mb-4">
           <div class="card-header-inner mb-4">
-            <h3>Contact & Business Details</h3>
+            <h3>Contact &amp; Business Details</h3>
             <p class="text-muted text-sm">Keep your delivery and invoicing info up to date</p>
           </div>
 
@@ -89,7 +82,13 @@ import { ToastService } from '../../../core/services/toast.service';
                   [class.is-invalid]="f['full_name'].touched && f['full_name'].invalid"
                 />
                 @if (f['full_name'].touched && f['full_name'].invalid) {
-                  <p class="error-text">Name is required (at least 2 characters).</p>
+                  @if (f['full_name'].hasError('required')) {
+                    <p class="error-text">Full name is required.</p>
+                  } @else if (f['full_name'].hasError('minlength')) {
+                    <p class="error-text">Name must be at least 2 characters.</p>
+                  } @else if (f['full_name'].hasError('pattern')) {
+                    <p class="error-text">Name can only contain letters, spaces, hyphens and apostrophes.</p>
+                  }
                 }
               </div>
 
@@ -113,8 +112,12 @@ import { ToastService } from '../../../core/services/toast.service';
                   type="tel"
                   class="form-control"
                   formControlName="phone"
-                  placeholder="+1 (555) 000-0000"
+                  placeholder="077 123 4567 or +94 77 123 4567"
+                  [class.is-invalid]="f['phone'].touched && f['phone'].invalid"
                 />
+                @if (f['phone'].touched && f['phone'].invalid) {
+                  <p class="error-text">Enter a valid phone number (e.g. 077 123 4567 or +94 77 123 4567)</p>
+                }
               </div>
 
               <!-- Company -->
@@ -158,6 +161,107 @@ import { ToastService } from '../../../core/services/toast.service';
                   <span class="spinner"></span> Saving Changes...
                 } @else {
                   <span class="material-icons-outlined">save</span> Save Changes
+                }
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Change Password Card -->
+        <div class="card p-4">
+          <div class="card-header-inner mb-4">
+            <div class="pw-header-row">
+              <span class="pw-icon"><span class="material-icons-outlined">lock</span></span>
+              <div>
+                <h3>Change Password</h3>
+                <p class="text-muted text-sm">Update your login password. You will stay logged in.</p>
+              </div>
+            </div>
+          </div>
+
+          <form [formGroup]="pwForm" (ngSubmit)="onSubmitPassword()">
+
+            <!-- Current Password -->
+            <div class="form-group mb-3">
+              <label class="form-label required">Current Password</label>
+              <div class="pw-input-wrap">
+                <input
+                  class="form-control"
+                  [type]="showCurrent ? 'text' : 'password'"
+                  formControlName="current_password"
+                  placeholder="Your current password"
+                  autocomplete="current-password"
+                  [class.is-invalid]="pw['current_password'].touched && pw['current_password'].invalid"
+                />
+                <button type="button" class="pw-eye" (click)="showCurrent = !showCurrent" tabindex="-1">
+                  <span class="material-icons-outlined">{{ showCurrent ? 'visibility_off' : 'visibility' }}</span>
+                </button>
+              </div>
+              @if (pw['current_password'].touched && pw['current_password'].hasError('required')) {
+                <p class="error-text">Current password is required</p>
+              }
+            </div>
+
+            <div class="form-grid">
+              <!-- New Password -->
+              <div class="form-group">
+                <label class="form-label required">New Password</label>
+                <div class="pw-input-wrap">
+                  <input
+                    class="form-control"
+                    [type]="showNew ? 'text' : 'password'"
+                    formControlName="new_password"
+                    placeholder="Min. 8 characters"
+                    autocomplete="new-password"
+                    [class.is-invalid]="pw['new_password'].touched && pw['new_password'].invalid"
+                  />
+                  <button type="button" class="pw-eye" (click)="showNew = !showNew" tabindex="-1">
+                    <span class="material-icons-outlined">{{ showNew ? 'visibility_off' : 'visibility' }}</span>
+                  </button>
+                </div>
+                @if (pw['new_password'].touched && pw['new_password'].invalid) {
+                  @if (pw['new_password'].hasError('required')) {
+                    <p class="error-text">New password is required</p>
+                  } @else if (pw['new_password'].hasError('minlength')) {
+                    <p class="error-text">Must be at least 8 characters</p>
+                  }
+                }
+              </div>
+
+              <!-- Confirm Password -->
+              <div class="form-group">
+                <label class="form-label required">Confirm New Password</label>
+                <div class="pw-input-wrap">
+                  <input
+                    class="form-control"
+                    [type]="showConfirm ? 'text' : 'password'"
+                    formControlName="confirm_password"
+                    placeholder="Re-enter new password"
+                    autocomplete="new-password"
+                    [class.is-invalid]="(pw['confirm_password'].touched && pw['confirm_password'].invalid) || (pwForm.hasError('passwordMismatch') && pw['confirm_password'].touched)"
+                  />
+                  <button type="button" class="pw-eye" (click)="showConfirm = !showConfirm" tabindex="-1">
+                    <span class="material-icons-outlined">{{ showConfirm ? 'visibility_off' : 'visibility' }}</span>
+                  </button>
+                </div>
+                @if (pw['confirm_password'].touched && pw['confirm_password'].hasError('required')) {
+                  <p class="error-text">Please confirm your new password</p>
+                } @else if (pwForm.hasError('passwordMismatch') && pw['confirm_password'].touched) {
+                  <p class="error-text">Passwords do not match</p>
+                }
+              </div>
+            </div>
+
+            <div class="form-actions mt-4">
+              <button
+                type="submit"
+                class="btn btn-portal"
+                [disabled]="isChangingPw || pwForm.invalid"
+              >
+                @if (isChangingPw) {
+                  <span class="spinner"></span> Updating...
+                } @else {
+                  <span class="material-icons-outlined">lock_reset</span> Update Password
                 }
               </button>
             </div>
@@ -231,7 +335,7 @@ import { ToastService } from '../../../core/services/toast.service';
       border-top: 1px solid var(--border-color);
     }
     .error-text {
-      color: var(--danger-color);
+      color: var(--danger-color, #dc2626);
       font-size: 0.8125rem;
       margin-top: 0.375rem;
     }
@@ -246,6 +350,49 @@ import { ToastService } from '../../../core/services/toast.service';
       margin-right: 0.5rem;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Password section */
+    .pw-header-row {
+      display: flex;
+      align-items: center;
+      gap: 0.875rem;
+    }
+    .pw-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      .material-icons-outlined {
+        color: #fff;
+        font-size: 1.25rem;
+      }
+    }
+    .pw-input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+      .form-control { padding-right: 2.75rem; }
+    }
+    .pw-eye {
+      position: absolute;
+      right: 0.625rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      color: var(--text-muted, #64748b);
+      display: flex;
+      align-items: center;
+      transition: color 0.15s;
+      &:hover { color: var(--portal-color, #0ea5e9); }
+      .material-icons-outlined { font-size: 1.125rem; }
+    }
+    .mb-3 { margin-bottom: 1rem; }
+
     @media (max-width: 640px) {
       .form-grid { grid-template-columns: 1fr; }
       .profile-header-card { flex-direction: column; text-align: center; }
@@ -253,16 +400,19 @@ import { ToastService } from '../../../core/services/toast.service';
     }
   `],
 })
-/**
- * Customer profile component handling personal contact details,
- * organization affiliation, and billing address updates.
- */
 export class CustomerProfile implements OnInit {
   profile: ProfileData | null = null;
   form: FormGroup;
-  isLoading = true;
-  isSaving = false;
+  isLoading    = true;
+  isSaving     = false;
   errorMessage = '';
+
+  // Change password form
+  pwForm:        FormGroup;
+  isChangingPw   = false;
+  showCurrent    = false;
+  showNew        = false;
+  showConfirm    = false;
 
   get initials(): string {
     const name = this.profile?.full_name || '';
@@ -273,9 +423,8 @@ export class CustomerProfile implements OnInit {
       : parts[0].substring(0, 2).toUpperCase();
   }
 
-  get f() {
-    return this.form.controls;
-  }
+  get f() { return this.form.controls; }
+  get pw() { return this.pwForm.controls; }
 
   constructor(
     private fb: FormBuilder,
@@ -285,11 +434,20 @@ export class CustomerProfile implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {
     this.form = this.fb.group({
-      full_name: ['', [Validators.required, Validators.minLength(2)]],
-      phone: [''],
-      company: [''],
-      address: [''],
+      full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100), Validators.pattern(NAME_PATTERN)]],
+      phone:     ['', [Validators.pattern(PHONE_PATTERN), Validators.maxLength(20)]],
+      company:   ['', [Validators.maxLength(255)]],
+      address:   ['', [Validators.maxLength(500)]],
     });
+
+    this.pwForm = this.fb.group(
+      {
+        current_password: ['', [Validators.required]],
+        new_password:     ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
+        confirm_password: ['', [Validators.required]],
+      },
+      { validators: passwordMatchValidator },
+    );
   }
 
   ngOnInit() {
@@ -305,15 +463,15 @@ export class CustomerProfile implements OnInit {
           this.profile = res.data;
           this.form.patchValue({
             full_name: res.data.full_name || '',
-            phone: res.data.phone || '',
-            company: res.data.company || '',
-            address: res.data.address || '',
+            phone:     res.data.phone     || '',
+            company:   res.data.company   || '',
+            address:   res.data.address   || '',
           });
         }
         this.isLoading = false;
         this.cdr.markForCheck();
       },
-      error: err => {
+      error: () => {
         this.isLoading = false;
         this.toast.error('Failed to load profile.');
         this.cdr.markForCheck();
@@ -322,8 +480,11 @@ export class CustomerProfile implements OnInit {
   }
 
   onSubmit() {
+    this.form.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
+      this.toast.error('Please fix the validation errors.');
       return;
     }
 
@@ -345,6 +506,41 @@ export class CustomerProfile implements OnInit {
         this.isSaving = false;
         this.errorMessage = err.error?.message || 'Failed to update profile.';
         this.toast.error(this.errorMessage);
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  onSubmitPassword() {
+    this.pwForm.markAllAsTouched();
+    this.cdr.detectChanges();
+
+    if (this.pwForm.invalid) {
+      this.toast.error('Please fix the errors before submitting.');
+      return;
+    }
+
+    const { current_password, new_password } = this.pwForm.value as {
+      current_password: string;
+      new_password:     string;
+    };
+
+    this.isChangingPw = true;
+    this.cdr.markForCheck();
+
+    this.authService.changePassword(current_password, new_password).subscribe({
+      next: () => {
+        this.toast.success('Password updated successfully!');
+        this.pwForm.reset();
+        this.showCurrent = false;
+        this.showNew     = false;
+        this.showConfirm = false;
+        this.isChangingPw = false;
+        this.cdr.markForCheck();
+      },
+      error: err => {
+        this.toast.error(err.error?.message || 'Failed to update password.');
+        this.isChangingPw = false;
         this.cdr.markForCheck();
       },
     });

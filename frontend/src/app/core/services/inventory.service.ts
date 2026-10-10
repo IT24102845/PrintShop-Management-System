@@ -100,4 +100,8 @@ export class InventoryService {
   adjustStock(id: string, dto: AdjustStockDto): Observable<InventoryResponse> {
     return this.http.post<InventoryResponse>(`${this.baseUrl}/${id}/adjust`, dto);
   }
+
+  deleteMaterial(id: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<{ success: boolean; message: string }>(`${this.baseUrl}/${id}`);
+  }
 }

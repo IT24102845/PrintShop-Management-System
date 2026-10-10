@@ -64,6 +64,9 @@ export class InventoryList implements OnInit {
   adjustNotes = '';
   isAdjusting = false;
 
+  deletingItem: any = null;
+  isDeleting = false;
+
   addForm: FormGroup;
 
   readonly categories = [
@@ -210,4 +213,35 @@ export class InventoryList implements OnInit {
 
   prevPage() { if (this.page > 1) { this.page--; this.load(); } }
   nextPage() { if (this.page < this.totalPages) { this.page++; this.load(); } }
+
+  openDeleteConfirm(item: any) {
+    this.deletingItem = item;
+    this.isDeleting = false;
+    this.cdr.markForCheck();
+  }
+
+  closeDeleteConfirm() {
+    this.deletingItem = null;
+    this.cdr.markForCheck();
+  }
+
+  confirmDelete() {
+    if (!this.deletingItem) return;
+    this.isDeleting = true;
+    this.cdr.markForCheck();
+
+    const itemName = this.deletingItem.material_name;
+    this.inventoryService.deleteMaterial(this.deletingItem.id).subscribe({
+      next: () => {
+        this.toast.success(`Material "${itemName}" deleted successfully.`);
+        this.closeDeleteConfirm();
+        this.load();
+      },
+      error: err => {
+        this.toast.error(err.error?.message || 'Failed to delete material.');
+        this.isDeleting = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
 }

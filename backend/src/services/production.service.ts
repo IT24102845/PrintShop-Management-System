@@ -77,29 +77,15 @@ export class ProductionService {
 
   async createProductionTask(dto: CreateProductionTaskDto): Promise<AnyRecord> {
     // 1. Verify order exists and design proof, client artwork, or confirmed status is present
+    // 1. Fetch order details
     const { data: order, error: orderError } = await supabase
       .from('orders')
-      .select(`
-        id, 
-        status,
-        design_file_url,
-        designs ( approval_status )
-      `)
+      .select('id, status, design_file_url')
       .eq('id', dto.order_id)
       .single();
 
     if (orderError || !order) {
       throw new AppError('Order not found', 404);
-    }
-
-    // Business Rule 1: Allow production if design approved, client artwork attached, or order confirmed
-    const designs = (order.designs ?? []) as Array<{ approval_status: string }>;
-    const hasApprovedDesign = designs.some(d => d.approval_status === 'approved');
-    const hasArtwork = Boolean(order.design_file_url);
-    const isOrderConfirmed = order.status === 'confirmed' || order.status === 'in_production';
-
-    if (!hasApprovedDesign && !hasArtwork && !isOrderConfirmed) {
-      throw new AppError('Cannot start production: No approved design or client artwork found for this order.', 400);
     }
 
     // Business Rule 2: Prevent accidental duplicate active tasks for the same order
@@ -204,10 +190,35 @@ export class ProductionService {
       .select(
         `*,
          orders (
-           service_type, quantity, deadline_date,
-           customers ( users ( full_name ) )
+           id,
+           service_type,
+           quantity,
+           deadline_date,
+           material,
+           size,
+           colour,
+           special_notes,
+           design_file_url,
+           description,
+           status,
+           customers (
+             id,
+             phone,
+             company,
+             users (
+               full_name,
+               email
+             )
+           )
          ),
-         employees ( users ( full_name ) )`,
+         employees (
+           id,
+           employee_role,
+           users (
+             full_name,
+             email
+           )
+         )`,
         { count: 'exact' }
       )
       .order('created_at', { ascending: false })
@@ -251,10 +262,10 @@ export class ProductionService {
     if (currentStatus !== newStatus) {
       const allowedTransitions: Record<ProductionStatus, ProductionStatus[]> = {
         WAITING:            ['PRINTING', 'FAILED'],
-        PRINTING:           ['QUALITY_CHECK', 'FAILED'],
+        PRINTING:           ['QUALITY_CHECK', 'WAITING', 'FAILED'],
         QUALITY_CHECK:      ['READY_FOR_DELIVERY', 'PRINTING', 'FAILED'],
-        READY_FOR_DELIVERY: ['COMPLETED', 'FAILED'],
-        COMPLETED:          [],
+        READY_FOR_DELIVERY: ['COMPLETED', 'QUALITY_CHECK', 'FAILED'],
+        COMPLETED:          ['READY_FOR_DELIVERY', 'QUALITY_CHECK', 'WAITING'],
         FAILED:             ['WAITING', 'PRINTING'],
       };
 
@@ -412,11 +423,12 @@ export class ProductionService {
     notes?: string;
     estimated_hours?: number;
     actual_hours?: number;
+    status?: ProductionStatus;
   }): Promise<AnyRecord> {
     // 1. Verify task exists
     const { data: task, error: fetchError } = await supabase
       .from('production_tasks')
-      .select('id, status')
+      .select('id, status, order_id, started_at, completed_at')
       .eq('id', taskId)
       .single();
 
@@ -424,33 +436,36 @@ export class ProductionService {
       throw new AppError('Production task not found', 404);
     }
 
-    // 2. Build update payload — only include whitelisted metadata fields
+    // 2. Build update payload
     const payload: Record<string, unknown> = {};
 
     if ('assigned_employee' in dto) payload.assigned_employee = dto.assigned_employee ?? null;
     if (dto.priority !== undefined) payload.priority = dto.priority;
     if (dto.notes !== undefined) payload.notes = dto.notes;
     if (dto.estimated_hours !== undefined) {
-      if (dto.estimated_hours <= 0) {
+      if (dto.estimated_hours !== null && dto.estimated_hours <= 0) {
         throw new AppError('Estimated hours must be greater than 0', 400);
       }
-      payload.estimated_hours = dto.estimated_hours;
+      payload.estimated_hours = dto.estimated_hours ?? null;
     }
     if (dto.actual_hours !== undefined) {
-      if (dto.actual_hours < 0) {
+      if (dto.actual_hours !== null && dto.actual_hours < 0) {
         throw new AppError('Actual hours cannot be negative', 400);
       }
-      payload.actual_hours = dto.actual_hours;
+      payload.actual_hours = dto.actual_hours ?? null;
+    }
+    if (dto.status !== undefined) {
+      payload.status = dto.status;
+      if (dto.status === 'PRINTING' && !task.started_at) {
+        payload.started_at = new Date().toISOString();
+      }
+      if (dto.status === 'COMPLETED' && !task.completed_at) {
+        payload.completed_at = new Date().toISOString();
+      }
     }
 
     if (Object.keys(payload).length === 0) {
-      // Nothing to update — return current task
-      const { data: current } = await supabase
-        .from('production_tasks')
-        .select('*')
-        .eq('id', taskId)
-        .single();
-      return (current ?? {}) as AnyRecord;
+      return (task ?? {}) as AnyRecord;
     }
 
     const { data: updated, error: updateError } = await supabase
@@ -465,13 +480,32 @@ export class ProductionService {
       throw new AppError('Failed to update production task', 500);
     }
 
-    logger.info(`Production task ${taskId} metadata updated`);
+    // Synchronize order status if status changed
+    if (dto.status && task.order_id) {
+      const orderStatusMap: Record<string, string> = {
+        WAITING: 'in_production',
+        PRINTING: 'in_production',
+        QUALITY_CHECK: 'quality_check',
+        READY_FOR_DELIVERY: 'ready',
+        COMPLETED: 'COMPLETED',
+        FAILED: 'in_production',
+      };
+      const newOrderStatus = orderStatusMap[dto.status];
+      if (newOrderStatus) {
+        await supabase
+          .from('orders')
+          .update({ status: newOrderStatus })
+          .eq('id', task.order_id);
+      }
+    }
+
+    logger.info(`Production task ${taskId} updated`);
     return updated as AnyRecord;
   }
 
   // ─── Staff/Manager: Delete Production Task ─────────────────────────────────
-  // Hard deletion allowed ONLY when status === WAITING (not yet printed).
-  // Order is reverted to 'confirmed' status so it can be re-queued if needed.
+  // Hard deletion allowed for any task.
+  // Order is reverted to 'pending' so it doesn't immediately auto-enroll back.
 
   async deleteProductionTask(taskId: string): Promise<void> {
     // 1. Fetch task
@@ -485,15 +519,7 @@ export class ProductionService {
       throw new AppError('Production task not found', 404);
     }
 
-    // 2. Only WAITING tasks may be deleted
-    if (task.status !== 'WAITING') {
-      throw new AppError(
-        `Cannot delete a production task that has already started (status: ${task.status}). Only WAITING tasks can be deleted.`,
-        400,
-      );
-    }
-
-    // 3. Delete task
+    // 2. Delete task from database
     const { error: deleteError } = await supabase
       .from('production_tasks')
       .delete()
@@ -504,36 +530,22 @@ export class ProductionService {
       throw new AppError('Failed to delete production task', 500);
     }
 
-    // 4. Revert order status to 'confirmed' so it can be re-queued
-    await supabase
-      .from('orders')
-      .update({ status: 'confirmed' })
-      .eq('id', task.order_id);
+    // 3. Revert order status to 'pending' so it won't be auto-recreated by auto-enroll
+    if (task.order_id) {
+      await supabase
+        .from('orders')
+        .update({ status: 'pending' })
+        .eq('id', task.order_id);
+    }
 
-    logger.info(`Production task ${taskId} deleted. Order ${task.order_id} reverted to confirmed.`);
+    logger.info(`Production task ${taskId} deleted. Order ${task.order_id} reverted to pending.`);
   }
 
   // ─── Support: Eligible Orders for Create Task modal ────────────────────────
-  // Returns orders that:
-  //   1. Have at least one approved design
-  //   2. Do NOT already have an active (non-COMPLETED/non-FAILED) production task
+  // Returns orders that do NOT currently have an active production task
 
   async getEligibleOrders(): Promise<AnyRecord[]> {
-    // Get orders with an approved design
-    const { data: approvedDesigns, error: dErr } = await supabase
-      .from('designs')
-      .select('order_id')
-      .eq('approval_status', 'approved');
-
-    if (dErr) {
-      throw new AppError('Failed to fetch eligible orders', 500);
-    }
-
-    const eligibleOrderIds = [...new Set((approvedDesigns ?? []).map(d => d.order_id))];
-
-    if (eligibleOrderIds.length === 0) return [];
-
-    // Get active production task order_ids to exclude
+    // 1. Get active production task order_ids to exclude
     const { data: activeTasks } = await supabase
       .from('production_tasks')
       .select('order_id')
@@ -541,22 +553,39 @@ export class ProductionService {
 
     const activeOrderIds = new Set((activeTasks ?? []).map(t => t.order_id));
 
-    // Filter eligible orders that don't have an active task
-    const finalEligibleIds = eligibleOrderIds.filter(id => !activeOrderIds.has(id));
-
-    if (finalEligibleIds.length === 0) return [];
-
+    // 2. Fetch orders eligible for production
     const { data: orders, error: oErr } = await supabase
       .from('orders')
-      .select('id, service_type, quantity, status, deadline_date, customers(users(full_name))')
-      .in('id', finalEligibleIds)
+      .select(`
+        id,
+        service_type,
+        quantity,
+        status,
+        deadline_date,
+        material,
+        size,
+        special_notes,
+        customers (
+          id,
+          phone,
+          company,
+          users (
+            full_name,
+            email
+          )
+        )
+      `)
+      .not('status', 'in', '(delivered,COMPLETED,cancelled)')
       .order('created_at', { ascending: false });
 
     if (oErr) {
+      logger.error('Failed to fetch eligible orders', oErr);
       throw new AppError('Failed to fetch eligible orders', 500);
     }
 
-    return (orders ?? []) as AnyRecord[];
+    // Filter out orders that already have an active production task
+    const eligibleOrders = (orders ?? []).filter(o => !activeOrderIds.has(o.id));
+    return eligibleOrders as AnyRecord[];
   }
 
   // ─── Support: Available Employees for assignment dropdown ──────────────────

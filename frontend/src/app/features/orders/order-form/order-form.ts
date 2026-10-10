@@ -126,10 +126,11 @@ export class OrderForm implements OnInit {
   }
 
   onSubmit() {
+    this.form.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.form.invalid) {
-      this.form.markAllAsTouched();
       this.toast.error('Please complete all required fields before submitting.');
-      this.cdr.markForCheck();
       return;
     }
     this.isLoading = true;

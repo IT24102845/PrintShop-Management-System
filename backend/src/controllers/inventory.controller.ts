@@ -65,6 +65,15 @@ export class InventoryController {
     }
   }
 
+  async deleteMaterial(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await inventoryService.deleteMaterial(req.params.id as string);
+      sendSuccess(res, null, 'Material deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getDashboard(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const stats = await inventoryService.getDashboardStats();

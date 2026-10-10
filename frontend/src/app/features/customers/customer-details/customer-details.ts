@@ -9,12 +9,24 @@
 import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
-import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators, AbstractControl, ValidationErrors } from '@angular/forms';
 import { CustomerService, CustomerProfile } from '../../../core/services/customer.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_PATTERN = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+const NAME_PATTERN  = /^[a-zA-Z\s\-'.]{2,100}$/;
+
+/** Cross-field validator: confirms new_password === confirm_password */
+function passwordMatchValidator(control: AbstractControl): ValidationErrors | null {
+  const newPw   = control.get('new_password')?.value;
+  const confirm = control.get('confirm_password')?.value;
+  if (newPw && confirm && newPw !== confirm) {
+    return { passwordMismatch: true };
+  }
+  return null;
+}
 
 @Component({
   selector: 'app-customer-details',
@@ -29,9 +41,16 @@ export class CustomerDetails implements OnInit {
   isLoading = true;
   isSubmitting = false;
 
-  // Edit Modal
+  // Edit Profile Modal
   showEditModal = false;
   editForm: FormGroup;
+
+  // Change Password Modal
+  showPasswordModal     = false;
+  isPasswordSubmitting  = false;
+  showNewPassword       = false;
+  showConfirmPassword   = false;
+  passwordForm: FormGroup;
 
   constructor(
     private route: ActivatedRoute,
@@ -43,14 +62,22 @@ export class CustomerDetails implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {
     this.editForm = this.fb.group({
-      full_name: ['', [Validators.required, Validators.minLength(2)]],
-      email:     ['', [Validators.required, Validators.pattern(EMAIL_PATTERN)]],
-      phone:     [''],
-      company:   [''],
-      address:   [''],
-      notes:     [''],
+      full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100), Validators.pattern(NAME_PATTERN)]],
+      email:     ['', [Validators.required, Validators.pattern(EMAIL_PATTERN), Validators.maxLength(255)]],
+      phone:     ['', [Validators.pattern(PHONE_PATTERN), Validators.maxLength(20)]],
+      company:   ['', [Validators.maxLength(255)]],
+      address:   ['', [Validators.maxLength(500)]],
+      notes:     ['', [Validators.maxLength(1000)]],
       is_active: [true],
     });
+
+    this.passwordForm = this.fb.group(
+      {
+        new_password:     ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
+        confirm_password: ['', [Validators.required]],
+      },
+      { validators: passwordMatchValidator },
+    );
   }
 
   ngOnInit(): void {
@@ -86,6 +113,8 @@ export class CustomerDetails implements OnInit {
     });
   }
 
+  // ─── Edit Profile Modal ────────────────────────────────────────────────────
+
   openEditModal(): void {
     if (!this.customer) return;
 
@@ -109,8 +138,10 @@ export class CustomerDetails implements OnInit {
   }
 
   onSubmitEdit(): void {
+    this.editForm.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.editForm.invalid) {
-      this.editForm.markAllAsTouched();
       this.toast.error('Please fix the validation errors.');
       return;
     }
@@ -148,6 +179,57 @@ export class CustomerDetails implements OnInit {
       },
     });
   }
+
+  // ─── Change Password Modal ─────────────────────────────────────────────────
+
+  openPasswordModal(): void {
+    this.passwordForm.reset();
+    this.showNewPassword     = false;
+    this.showConfirmPassword = false;
+    this.showPasswordModal   = true;
+    this.cdr.markForCheck();
+  }
+
+  closePasswordModal(): void {
+    this.showPasswordModal = false;
+    this.cdr.markForCheck();
+  }
+
+  toggleNewPasswordVisibility(): void {
+    this.showNewPassword = !this.showNewPassword;
+  }
+
+  toggleConfirmPasswordVisibility(): void {
+    this.showConfirmPassword = !this.showConfirmPassword;
+  }
+
+  onSubmitPassword(): void {
+    this.passwordForm.markAllAsTouched();
+    this.cdr.detectChanges();
+
+    if (this.passwordForm.invalid) {
+      this.toast.error('Please fix the password errors before submitting.');
+      return;
+    }
+
+    const { new_password } = this.passwordForm.value as { new_password: string };
+    this.isPasswordSubmitting = true;
+
+    this.customerService.resetCustomerPassword(this.customerId, new_password).subscribe({
+      next: () => {
+        this.toast.success('Customer password updated successfully!');
+        this.closePasswordModal();
+        this.isPasswordSubmitting = false;
+      },
+      error: err => {
+        this.toast.error(err.error?.message || 'Failed to update password.');
+        this.isPasswordSubmitting = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  // ─── Other Actions ─────────────────────────────────────────────────────────
 
   toggleActive(): void {
     if (!this.customer) return;
@@ -205,4 +287,3 @@ export class CustomerDetails implements OnInit {
     }
   }
 }
-

@@ -215,7 +215,8 @@ export class CustomerService {
 
     // Search: resolve matching user IDs first, then filter customers
     if (query.search?.trim()) {
-      const term = `%${query.search.trim()}%`;
+      const cleanSearch = query.search.trim().replace(/[,()]/g, '');
+      const term = `%${cleanSearch}%`;
 
       const { data: matchedUsers } = await supabase
         .from('users')
@@ -471,18 +472,13 @@ export class CustomerService {
       throw new AppError('Customer not found', 404);
     }
 
-    // Check if customer has orders or quotations
+    // Check if customer has associated orders (quotations are attached to orders)
     const { count: orderCount } = await supabase
       .from('orders')
       .select('id', { count: 'exact', head: true })
       .eq('customer_id', customerRow.id);
 
-    const { count: quoteCount } = await supabase
-      .from('quotations')
-      .select('id', { count: 'exact', head: true })
-      .eq('customer_id', customerRow.id);
-
-    if ((orderCount && orderCount > 0) || (quoteCount && quoteCount > 0)) {
+    if (orderCount && orderCount > 0) {
       // Soft-delete / deactivate to preserve historical references
       const { error: deactError } = await supabase
         .from('users')

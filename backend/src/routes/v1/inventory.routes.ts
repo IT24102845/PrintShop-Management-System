@@ -12,7 +12,7 @@
 import { Router } from 'express';
 import { inventoryController } from '../../controllers/inventory.controller';
 import { authenticate, authorize } from '../../middleware/auth.middleware';
-import { validate } from '../../middleware/validation.middleware';
+import { validate, validateUUID } from '../../middleware/validation.middleware';
 
 const router = Router();
 
@@ -73,6 +73,7 @@ router.get(
 // Defines the API endpoint and connects it to the controller.
 router.patch(
   '/:id',
+  validateUUID('id'),
   validate({
     body: {
       material_name:       { type: 'string', minLength: 2, required: false },
@@ -93,6 +94,7 @@ router.patch(
 // Defines the API endpoint and connects it to the controller.
 router.post(
   '/:id/adjust',
+  validateUUID('id'),
   validate({
     body: {
       action:   { type: 'string', enum: ['ADD', 'REMOVE'] },
@@ -101,6 +103,16 @@ router.post(
     },
   }),
   (req, res, next) => inventoryController.adjustStock(req, res, next)
+);
+
+/**
+ * @route   DELETE /api/v1/inventory/:id
+ * @desc    Delete material from inventory
+ */
+router.delete(
+  '/:id',
+  validateUUID('id'),
+  (req, res, next) => inventoryController.deleteMaterial(req, res, next)
 );
 
 export default router;

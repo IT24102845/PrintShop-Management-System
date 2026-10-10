@@ -43,6 +43,15 @@ export class Login {
     return portal === 'customer' || (returnUrl && returnUrl.startsWith('/customer'));
   }
 
+  /** Carries the typed email and portal context over to the Forgot Password page. */
+  get forgotQueryParams(): Record<string, string> {
+    const params: Record<string, string> = {};
+    const email = (this.loginForm.get('email')?.value ?? '').trim();
+    if (email) params['email'] = email;
+    if (this.isCustomerPortal) params['portal'] = 'customer';
+    return params;
+  }
+
   fillDemoCustomer() {
     this.loginForm.patchValue({
       email: 'amina@techstartup.com',

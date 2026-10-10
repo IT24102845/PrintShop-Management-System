@@ -32,6 +32,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+const PHONE_PATTERN = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+const NAME_PATTERN  = /^[a-zA-Z\s\-'.]{2,100}$/;
 
 @Component({
   selector: 'app-customer-list',
@@ -66,13 +68,13 @@ export class CustomerList implements OnInit {
     private cdr: ChangeDetectorRef,
   ) {
     this.customerForm = this.fb.group({
-      full_name: ['', [Validators.required, Validators.minLength(2)]],
-      email:     ['', [Validators.required, Validators.pattern(EMAIL_PATTERN)]],
-      phone:     [''],
-      company:   [''],
-      address:   [''],
-      notes:     [''],
-      password:  [''],
+      full_name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100), Validators.pattern(NAME_PATTERN)]],
+      email:     ['', [Validators.required, Validators.pattern(EMAIL_PATTERN), Validators.maxLength(255)]],
+      phone:     ['', [Validators.pattern(PHONE_PATTERN), Validators.maxLength(20)]],
+      company:   ['', [Validators.maxLength(255)]],
+      address:   ['', [Validators.maxLength(500)]],
+      notes:     ['', [Validators.maxLength(1000)]],
+      password:  ['', [Validators.minLength(6), Validators.maxLength(128)]],
       is_active: [true],
     });
   }
@@ -181,8 +183,10 @@ export class CustomerList implements OnInit {
   }
 
   onSubmitModal() {
+    this.customerForm.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.customerForm.invalid) {
-      this.customerForm.markAllAsTouched();
       this.toast.error('Please fill in all required fields properly.');
       return;
     }

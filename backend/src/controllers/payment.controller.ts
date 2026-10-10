@@ -61,6 +61,42 @@ export class PaymentController {
       next(error);
     }
   }
+  // Receives the HTTP request.
+  // Passes the required data to the service.
+  // Sends the result back to the frontend.
+
+  async getPaymentById(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const payment = await paymentService.getPaymentById(req.params.id as string);
+      sendSuccess(res, payment, 'Payment retrieved successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+  // Receives the HTTP request.
+  // Passes the required data to the service.
+  // Sends the result back to the frontend.
+
+  async updatePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const updated = await paymentService.updatePayment(req.params.id as string, req.body);
+      sendSuccess(res, updated, 'Payment updated successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
+  // Receives the HTTP request.
+  // Passes the required data to the service.
+  // Sends the result back to the frontend.
+
+  async deletePayment(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      await paymentService.deletePayment(req.params.id as string);
+      sendSuccess(res, null, 'Payment deleted successfully');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const paymentController = new PaymentController();

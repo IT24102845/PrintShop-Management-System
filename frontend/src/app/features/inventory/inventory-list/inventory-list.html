@@ -152,9 +152,14 @@
                 }
               </td>
               <td>
-                <button class="btn btn-secondary btn-sm" (click)="openAdjust(item)">
-                  <span class="material-icons-outlined text-xs">tune</span> Adjust
-                </button>
+                <div style="display:flex;gap:0.4rem;align-items:center">
+                  <button class="btn btn-secondary btn-sm" (click)="openAdjust(item)" title="Adjust stock">
+                    <span class="material-icons-outlined text-xs">tune</span> Adjust
+                  </button>
+                  <button class="btn btn-danger btn-sm" (click)="openDeleteConfirm(item)" title="Delete material" style="padding:0.35rem 0.55rem;display:inline-flex;align-items:center;justify-content:center">
+                    <span class="material-icons-outlined text-xs">delete</span>
+                  </button>
+                </div>
               </td>
             </tr>
           }
@@ -207,3 +212,44 @@
     </div>
   </div>
 }
+
+<!-- Delete Material Confirmation Modal -->
+@if (deletingItem) {
+  <div class="modal-overlay" (click)="closeDeleteConfirm()">
+    <div class="modal modal-sm" (click)="$event.stopPropagation()" style="max-width:440px">
+      <div class="modal-header">
+        <h2 style="color:#ef4444;display:flex;align-items:center;gap:0.4rem;font-size:1.125rem">
+          <span class="material-icons-outlined" style="font-size:1.4rem">delete_forever</span> Delete Material
+        </h2>
+        <button class="btn btn-ghost btn-icon" (click)="closeDeleteConfirm()">
+          <span class="material-icons-outlined">close</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p style="color:#334155;margin-bottom:0.75rem;font-size:0.9375rem">
+          Are you sure you want to permanently remove this material from inventory?
+        </p>
+        <div class="card card-body" style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:0.875rem;margin-bottom:0.75rem">
+          <strong style="color:#991b1b;font-size:1rem">{{ deletingItem.material_name }}</strong>
+          <div style="font-size:0.8125rem;color:#64748b;margin-top:0.25rem">
+            <span>SKU: {{ deletingItem.sku || 'N/A' }}</span> · <span>Category: {{ deletingItem.category | titlecase }}</span>
+          </div>
+          <div style="font-size:0.8125rem;color:#b91c1c;margin-top:0.25rem;font-weight:600">
+            Current Stock: {{ deletingItem.quantity }} {{ deletingItem.unit }}
+          </div>
+        </div>
+        <p class="text-danger text-xs font-semibold" style="margin:0">
+          ⚠️ This action cannot be undone.
+        </p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" (click)="closeDeleteConfirm()">Cancel</button>
+        <button class="btn btn-danger" (click)="confirmDelete()" [disabled]="isDeleting">
+          <span class="material-icons-outlined text-xs">delete</span>
+          {{ isDeleting ? 'Deleting…' : 'Yes, Delete Material' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+

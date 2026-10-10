@@ -882,3 +882,370 @@
     background: #f1f5f9;
   }
 }
+
+// =============================================================================
+// Offers Page - Dark Mode Overrides
+// =============================================================================
+
+[data-theme="dark"] {
+
+  // Page title & headings
+  .page-title { color: var(--text-main) !important; }
+  .section-title { color: var(--text-main) !important; }
+
+  // Metrics bar pills
+  .metric-pill {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    .metric-num { color: var(--text-main) !important; }
+    .metric-txt { color: var(--text-muted) !important; }
+  }
+
+  // Offer card wrapper (the white container around showcase card)
+  .offer-card-wrapper {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // showcase-light theme card (the only non-dark themed card)
+  .showcase-card.showcase-light {
+    background: linear-gradient(135deg, #1e1e28 0%, #252534 100%) !important;
+    color: var(--text-main) !important;
+
+    .showcase-eyebrow { color: var(--primary-color) !important; }
+    .showcase-title   { color: var(--text-main) !important; }
+    .showcase-desc    { color: var(--text-secondary) !important; }
+
+    .pill-preview {
+      background: var(--text-main) !important;
+      color: var(--bg-main) !important;
+    }
+
+    .visual-badge-pill {
+      background: rgba(255,255,255,0.08) !important;
+      border-color: rgba(255,255,255,0.15) !important;
+      color: var(--text-secondary) !important;
+    }
+  }
+
+  // Card controls bar (bottom of each offer card)
+  .card-controls {
+    background: var(--bg-card-subtle) !important;
+    border-top-color: var(--border-color) !important;
+  }
+  .status-label { color: var(--text-secondary) !important; }
+  .sort-tag {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-muted) !important;
+  }
+
+  // Control buttons
+  .control-btn {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+    &:hover {
+      background: var(--bg-card) !important;
+      color: var(--text-main) !important;
+    }
+  }
+
+  // Table card
+  .table-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .table-card-title { color: var(--text-main) !important; }
+  .data-table {
+    th {
+      background: var(--bg-card-subtle) !important;
+      color: var(--text-muted) !important;
+      border-bottom-color: var(--border-color) !important;
+    }
+    td {
+      border-bottom-color: var(--border-color) !important;
+      color: var(--text-secondary) !important;
+    }
+    .row-inactive { background: var(--bg-card-subtle) !important; }
+  }
+  .desc-col { color: var(--text-muted) !important; }
+
+  // Small pill/badge inside table
+  .service-query-tag {
+    background: rgba(99,102,241,0.12) !important;
+    color: #a5b4fc !important;
+  }
+  .pill-preview-mini {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-secondary) !important;
+  }
+  .badge-mini {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // Theme chip - light variant needs to become dark-friendly
+  .theme-chip-light {
+    background: rgba(255,255,255,0.10) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  // Status badges
+  .status-badge.badge-active {
+    background: rgba(52,199,89,0.12) !important;
+    color: #34c759 !important;
+  }
+  .status-badge.badge-inactive {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-muted) !important;
+  }
+
+  // Ghost button hovers
+  .btn-ghost {
+    color: var(--text-muted) !important;
+    &:hover {
+      background: var(--bg-card-subtle) !important;
+      color: var(--text-main) !important;
+    }
+  }
+
+  // Modal
+  .modal-dialog {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .modal-header {
+    border-bottom-color: var(--border-color) !important;
+    .modal-title   { color: var(--text-main) !important; }
+    .modal-subtitle { color: var(--text-muted) !important; }
+    .btn-close {
+      background: var(--bg-card-subtle) !important;
+      color: var(--text-muted) !important;
+      &:hover { background: var(--bg-card) !important; color: var(--text-main) !important; }
+    }
+  }
+  .modal-footer {
+    background: var(--bg-card-subtle) !important;
+    border-top-color: var(--border-color) !important;
+  }
+
+  // Form controls in modal
+  .form-group {
+    .form-label { color: var(--text-secondary) !important; }
+    .form-control {
+      background: var(--bg-card-subtle) !important;
+      border-color: var(--border-color) !important;
+      color: var(--text-main) !important;
+      &:focus {
+        background: var(--bg-card) !important;
+        border-color: var(--primary-color) !important;
+      }
+    }
+  }
+
+  // Theme selector cards
+  .theme-option-card {
+    background: var(--bg-card-subtle) !important;
+    border-color: transparent !important;
+    &:hover { background: var(--bg-card) !important; }
+    &.selected {
+      background: var(--bg-card) !important;
+      border-color: var(--primary-color) !important;
+    }
+    .theme-name { color: var(--text-main) !important; }
+    .theme-desc { color: var(--text-muted) !important; }
+  }
+
+  // Toggle row
+  .form-check-wrap {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    .toggle-title { color: var(--text-main) !important; }
+    .toggle-desc  { color: var(--text-muted) !important; }
+  }
+
+  // Preview column
+  .preview-column {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    .preview-label-tag { color: var(--text-muted) !important; }
+    .preview-hint      { color: var(--text-muted) !important; }
+  }
+
+  // Secondary button
+  .btn-secondary {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+    &:hover { background: var(--bg-card) !important; }
+  }
+}
+
+// =============================================================================
+// Offers - :host-context overrides (ensures Angular encapsulation is pierced)
+// =============================================================================
+
+:host-context([data-theme="dark"]) {
+
+  // Metrics bar pills (the white count chips at the top)
+  .metric-pill {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+    box-shadow: none !important;
+
+    .metric-num { color: var(--text-main) !important; }
+    .metric-txt { color: var(--text-muted) !important; }
+  }
+
+  // Page headings
+  .page-title    { color: var(--text-main) !important; }
+  .section-title { color: var(--text-main) !important; }
+
+  // Offer card white wrapper
+  .offer-card-wrapper {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // showcase-light card (Heavyweight Vinyl Banners style)
+  .showcase-card.showcase-light {
+    background: linear-gradient(135deg, #1e1e28 0%, #252534 100%) !important;
+    color: var(--text-main) !important;
+
+    .showcase-eyebrow { color: var(--primary-color) !important; }
+    .showcase-title   { color: var(--text-main) !important; }
+    .showcase-desc    { color: var(--text-secondary) !important; }
+
+    .pill-preview {
+      background: var(--text-main) !important;
+      color: var(--bg-main) !important;
+    }
+
+    .visual-badge-pill {
+      background: rgba(255,255,255,0.08) !important;
+      border-color: rgba(255,255,255,0.15) !important;
+      color: var(--text-secondary) !important;
+    }
+  }
+
+  // Card controls bar
+  .card-controls {
+    background: var(--bg-card-subtle) !important;
+    border-top-color: var(--border-color) !important;
+  }
+  .status-label { color: var(--text-secondary) !important; }
+
+  // Table card
+  .table-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .table-card-title { color: var(--text-main) !important; }
+  .data-table {
+    th {
+      background: var(--bg-card-subtle) !important;
+      color: var(--text-muted) !important;
+      border-bottom-color: var(--border-color) !important;
+    }
+    td {
+      border-bottom-color: var(--border-color) !important;
+      color: var(--text-secondary) !important;
+    }
+    .row-inactive { background: var(--bg-card-subtle) !important; }
+  }
+
+  // Control buttons on card
+  .control-btn {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  // Pills / badges in table
+  .pill-preview-mini {
+    background: rgba(255,255,255,0.07) !important;
+    color: var(--text-secondary) !important;
+  }
+  .badge-mini {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+  .theme-chip-light {
+    background: rgba(255,255,255,0.10) !important;
+    color: var(--text-secondary) !important;
+  }
+  .status-badge.badge-active {
+    background: rgba(52,199,89,0.12) !important;
+    color: #34c759 !important;
+  }
+  .status-badge.badge-inactive {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-muted) !important;
+  }
+
+  // Modal
+  .modal-dialog {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .modal-header {
+    border-bottom-color: var(--border-color) !important;
+    .modal-title    { color: var(--text-main) !important; }
+    .modal-subtitle { color: var(--text-muted) !important; }
+    .btn-close {
+      background: var(--bg-card-subtle) !important;
+      color: var(--text-muted) !important;
+    }
+  }
+  .modal-footer {
+    background: var(--bg-card-subtle) !important;
+    border-top-color: var(--border-color) !important;
+  }
+
+  // Form controls in modal
+  .form-group .form-label { color: var(--text-secondary) !important; }
+  .form-group .form-control {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+    &:focus {
+      background: var(--bg-card) !important;
+      border-color: var(--primary-color) !important;
+    }
+  }
+
+  // Theme option cards
+  .theme-option-card {
+    background: var(--bg-card-subtle) !important;
+    &:hover { background: var(--bg-card) !important; }
+    &.selected {
+      background: var(--bg-card) !important;
+      border-color: var(--primary-color) !important;
+    }
+    .theme-name { color: var(--text-main) !important; }
+    .theme-desc { color: var(--text-muted) !important; }
+  }
+
+  // Toggle row
+  .form-check-wrap {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    .toggle-title { color: var(--text-main) !important; }
+    .toggle-desc  { color: var(--text-muted) !important; }
+  }
+
+  // Preview column
+  .preview-column {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    .preview-label-tag { color: var(--text-muted) !important; }
+    .preview-hint      { color: var(--text-muted) !important; }
+  }
+
+  // Secondary button
+  .btn-secondary {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+  }
+}

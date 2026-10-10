@@ -386,6 +386,33 @@ import { FileUpload } from '../../../shared/components/file-upload/file-upload';
       font-weight: 600;
       color: #475569;
     }
+    :host-context([data-theme="dark"]) {
+      .approved-lock-badge {
+        background: rgba(52,199,89,0.10) !important;
+        border-color: rgba(52,199,89,0.25) !important;
+        color: #34c759 !important;
+      }
+      .modal-box {
+        background: var(--bg-card) !important;
+        border: 1px solid var(--border-color) !important;
+      }
+      .modal-header {
+        border-bottom-color: var(--border-color) !important;
+        .modal-title { color: var(--text-main) !important; }
+      }
+      .modal-footer {
+        background: var(--bg-card-subtle) !important;
+        border-top-color: var(--border-color) !important;
+      }
+      .modal-close {
+        color: var(--text-muted) !important;
+        &:hover { background: var(--bg-card-subtle) !important; }
+      }
+      .meta-pill {
+        background: rgba(255,255,255,0.07) !important;
+        color: var(--text-secondary) !important;
+      }
+    }
   `],
 })
 /**
@@ -609,3 +636,4 @@ export class DesignList implements OnInit {
   prevPage() { if (this.page > 1) { this.page--; this.load(); } }
   nextPage() { if (this.page < this.totalPages) { this.page++; this.load(); } }
 }
+

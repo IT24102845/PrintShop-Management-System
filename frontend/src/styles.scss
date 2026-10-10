@@ -119,6 +119,56 @@
 }
 
 // =============================================================================
+// Dark Theme Overrides
+// =============================================================================
+
+[data-theme="dark"] {
+  /* Surfaces */
+  --bg-main:            #0a0a0f;
+  --bg-card:            #141419;
+  --bg-card-subtle:     #1a1a22;
+  --bg-sidebar:         rgba(18, 18, 26, 0.92);
+  --bg-sidebar-hover:   rgba(0, 122, 255, 0.10);
+  --bg-sidebar-active:  linear-gradient(135deg, #0077ed 0%, #004fad 100%);
+  --text-sidebar:       #9ba8bc;
+  --text-sidebar-active:#ffffff;
+  --border-sidebar:     rgba(255, 255, 255, 0.07);
+
+  /* Typography */
+  --text-main:          #f2f2f7;
+  --text-secondary:     #aeaeb2;
+  --text-muted:         #636366;
+  --text-placeholder:   #48484a;
+
+  /* Borders */
+  --border-color:       rgba(255, 255, 255, 0.08);
+  --border-subtle:      rgba(255, 255, 255, 0.04);
+  --border-focus:       #0a84ff;
+
+  /* Shadows (lighter on dark bg) */
+  --shadow-xs:   0 1px 2px rgba(0,0,0,0.3);
+  --shadow-sm:   0 2px 8px rgba(0,0,0,0.4);
+  --shadow-md:   0 4px 20px rgba(0,0,0,0.5);
+  --shadow-lg:   0 12px 32px rgba(0,0,0,0.55);
+  --shadow-xl:   0 20px 48px rgba(0,0,0,0.6);
+  --shadow-hover:0 14px 38px rgba(0,0,0,0.55);
+
+  /* Primary accent stays vivid in dark mode */
+  --primary-color:      #0a84ff;
+  --primary-hover:      #409cff;
+  --primary-light:      rgba(10, 132, 255, 0.15);
+  --primary-dark:       #409cff;
+
+  /* Status light tints – darker on dark bg */
+  --success-light:      rgba(52, 199, 89, 0.12);
+  --warning-light:      rgba(255, 149, 0, 0.12);
+  --danger-light:       rgba(255, 59, 48, 0.12);
+  --info-light:         rgba(10, 132, 255, 0.12);
+  --purple-light:       rgba(191, 90, 242, 0.12);
+  --portal-light:       rgba(10, 132, 255, 0.12);
+}
+
+// =============================================================================
 // Reset & Base
 // =============================================================================
 
@@ -126,6 +176,15 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html {
+  color-scheme: light;
+  transition: background-color 200ms ease, color 200ms ease;
+
+  &[data-theme="dark"] {
+    color-scheme: dark;
+  }
 }
 
 html, body {
@@ -406,7 +465,7 @@ img, svg { display: block; max-width: 100%; }
   border-radius: var(--radius-md);
   font-size: 0.875rem;
   font-family: inherit;
-  background: #fff;
+  background: var(--bg-card);
   color: var(--text-main);
   transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
   width: 100%;
@@ -549,7 +608,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   overflow-x: auto;
   border-radius: var(--radius-lg);
   border: 1px solid var(--border-color);
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .data-table {
@@ -579,7 +638,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
       transition: background var(--transition-fast);
 
       &:last-child { border-bottom: none; }
-      &:hover { background: #fafbfc; }
+      &:hover { background: var(--bg-card-subtle); }
     }
 
     td {
@@ -705,8 +764,8 @@ textarea.form-control { resize: vertical; min-height: 100px; }
   gap: 0.875rem;
   padding: 1rem 1.25rem;
   border-radius: var(--radius-lg);
-  background: #1e293b;
-  color: #f8fafc;
+  background: var(--bg-card);
+  color: var(--text-main);
   font-size: 0.875rem;
   font-weight: 500;
   min-width: 280px;
@@ -762,7 +821,7 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 }
 
 .modal {
-  background: #fff;
+  background: var(--bg-card);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-xl);
   width: 100%;
@@ -869,4 +928,459 @@ textarea.form-control { resize: vertical; min-height: 100px; }
 @media (max-width: 480px) {
   .metrics-grid { grid-template-columns: 1fr; }
   .btn-lg { padding: 0.625rem 1.25rem; font-size: 0.9375rem; }
+}
+
+// =============================================================================
+// Dark Mode — Component-Level Overrides
+// =============================================================================
+
+[data-theme="dark"] {
+
+  // General surfaces
+  .card, .apple-card, .metric-card, .filter-card, .view-toggle {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // Form controls
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  textarea, select {
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+  }
+  input::placeholder, textarea::placeholder { color: var(--text-placeholder) !important; }
+
+  // Buttons
+  .btn-secondary {
+    background: #2a2a36 !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // Table
+  .data-table thead { background: var(--bg-card-subtle) !important; }
+  .data-table tbody tr:hover { background: var(--bg-card-subtle) !important; }
+
+  // Skeleton
+  .skeleton {
+    background: linear-gradient(90deg,#1e1e28 25%,#252530 50%,#1e1e28 75%) !important;
+    background-size: 800px 100% !important;
+  }
+
+  // View toggle pill
+  .view-toggle { background: #1e1e28 !important; }
+
+  // Tint helpers
+  .bg-purple-light  { background: rgba(175, 82,222, 0.12) !important; }
+  .bg-success-light { background: rgba( 52,199, 89, 0.10) !important; }
+  .bg-warning-light { background: rgba(255,149,  0, 0.10) !important; }
+  .bg-danger-light  { background: rgba(255, 59, 48, 0.10) !important; }
+  .bg-info-light    { background: rgba( 10,132,255, 0.10) !important; }
+  .bg-primary-light { background: rgba( 10,132,255, 0.10) !important; }
+  .bg-portal-light  { background: rgba( 10,132,255, 0.10) !important; }
+
+  // Quotation warning card
+  .action-card {
+    background: rgba(245,158,11,0.07) !important;
+    border-color: rgba(245,158,11,0.35) !important;
+  }
+  .action-card-header {
+    border-bottom-color: rgba(245,158,11,0.2) !important;
+    h3 { color: #fbbf24 !important; }
+    p  { color: #d97706 !important; }
+  }
+  .action-row { border-bottom-color: rgba(245,158,11,0.15) !important; }
+  .order-service { color: var(--text-main) !important; }
+  .order-meta, .order-desc, .order-submitted { color: var(--text-muted) !important; }
+
+  // Production queue / kanban
+  .metric-value, .spec-value { color: var(--text-main) !important; }
+  .metric-title, .spec-label, .filter-label { color: var(--text-muted) !important; }
+  .active-metric {
+    background: rgba(99,102,241,0.15) !important;
+    border-color: #6366f1 !important;
+  }
+
+  // Search boxes
+  .search-box {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+  }
+  .search-box input { color: var(--text-main) !important; background: transparent !important; }
+
+  // Alerts
+  .alert-error   { background:rgba(255, 59, 48,0.10)!important; border-color:rgba(255, 59, 48,0.30)!important; color:#ff6b6b!important; }
+  .alert-success { background:rgba( 52,199, 89,0.10)!important; border-color:rgba( 52,199, 89,0.30)!important; color:#5ee67f!important; }
+  .alert-warning { background:rgba(255,149,  0,0.10)!important; border-color:rgba(255,149,  0,0.30)!important; color:#ffb74d!important; }
+  .alert-info    { background:rgba( 10,132,255,0.10)!important; border-color:rgba( 10,132,255,0.30)!important; color:#60a5fa!important; }
+
+  // Empty state
+  .empty-state .empty-icon { background: var(--bg-card-subtle) !important; }
+
+  // Toast
+  .toast {
+    background: #1a1a24 !important;
+    color: var(--text-main) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  // Badges
+  .badge-neutral { background: #2a2a36 !important; color: var(--text-muted) !important; }
+
+  // Apple hero/shelf
+  .apple-hero-headline .headline-bold  { color: var(--text-main) !important; }
+  .apple-hero-headline .headline-muted { color: var(--text-muted) !important; }
+  .apple-shelf-header .shelf-title     { color: var(--text-main) !important; }
+  .apple-shelf-header .shelf-subtitle  { color: var(--text-muted) !important; }
+
+  // Profile/user name+role
+  .profile-name, .user-name, .dropdown-name { color: var(--text-main) !important; }
+  .profile-role, .user-role, .dropdown-email { color: var(--text-muted) !important; }
+}
+
+// =============================================================================
+// Dark Mode — Production Queue & Kanban Specific
+// =============================================================================
+
+[data-theme="dark"] {
+
+  // Kanban column background + border
+  .kanban-col {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // Kanban column header
+  .kanban-header {
+    background: var(--bg-card-subtle) !important;
+    border-bottom-color: var(--border-color) !important;
+    .col-title { color: var(--text-main) !important; }
+    .col-count {
+      background: rgba(255,255,255,0.06) !important;
+      color: var(--text-muted) !important;
+    }
+  }
+
+  // Individual kanban cards
+  .kanban-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+    &:hover { border-color: rgba(255,255,255,0.18) !important; }
+    .card-top { color: var(--text-main) !important; }
+  }
+
+  // Skeleton loading columns
+  .skeleton-col {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+
+  // Table wrapper inside production queue
+  .table-wrapper {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .data-table {
+    th {
+      background: var(--bg-card-subtle) !important;
+      color: var(--text-muted) !important;
+      border-bottom-color: var(--border-color) !important;
+    }
+    td { border-bottom-color: var(--border-color) !important; color: var(--text-secondary) !important; }
+    tbody tr:hover { background: var(--bg-card-subtle) !important; }
+  }
+
+  // Operator pill
+  .operator-pill {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  // Modal
+  .modal-box {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  .modal-header {
+    border-bottom-color: var(--border-color) !important;
+    .modal-title { color: var(--text-main) !important; }
+  }
+  .modal-close {
+    color: var(--text-muted) !important;
+    &:hover { background: var(--bg-card-subtle) !important; color: var(--text-main) !important; }
+  }
+  .modal-footer {
+    background: var(--bg-card-subtle) !important;
+    border-top-color: var(--border-color) !important;
+  }
+
+  // Workflow stepper
+  .workflow-stepper {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+  .step-node .step-circle {
+    background: rgba(255,255,255,0.08) !important;
+    color: var(--text-muted) !important;
+  }
+  .step-node .step-label { color: var(--text-muted) !important; }
+  .step-line { background: rgba(255,255,255,0.10) !important; }
+
+  // Details sections
+  .details-section {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+  .section-title {
+    color: var(--text-main) !important;
+    border-bottom-color: var(--border-color) !important;
+  }
+
+  // Floor notes box
+  .floor-notes-box {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    .notes-header { color: var(--text-secondary) !important; }
+    .notes-content { color: var(--text-secondary) !important; }
+  }
+
+  // Delete target / danger card
+  .delete-target-card {
+    background: rgba(255,59,48,0.08) !important;
+    border-color: rgba(255,59,48,0.25) !important;
+  }
+
+  // Empty select box
+  .empty-select-box {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-muted) !important;
+  }
+
+  // Meta pills
+  .meta-pill {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  // Badge qty
+  .badge-qty {
+    background: rgba(99,102,241,0.15) !important;
+    color: #a5b4fc !important;
+  }
+
+  // Search & filter
+  .search-box input::placeholder { color: var(--text-placeholder) !important; }
+  .filter-actions select {
+    background: var(--bg-card) !important;
+    color: var(--text-main) !important;
+    border-color: var(--border-color) !important;
+  }
+}
+
+// =============================================================================
+// Dark Mode — Quotation List
+// =============================================================================
+
+[data-theme="dark"] {
+  .action-card {
+    background: rgba(245,158,11,0.06) !important;
+    border-color: rgba(245,158,11,0.30) !important;
+  }
+  .action-card-header {
+    background: rgba(245,158,11,0.04) !important;
+  }
+  .action-row { color: var(--text-main) !important; }
+}
+
+// =============================================================================
+// Dark Mode — Design List, Customer Portal & Remaining Components
+// =============================================================================
+
+[data-theme="dark"] {
+
+  // ── Modal box (shared pattern across features) ────────────────────────────
+  .modal-box {
+    background: var(--bg-card) !important;
+    border: 1px solid var(--border-color) !important;
+  }
+  .modal-header {
+    border-bottom-color: var(--border-color) !important;
+    .modal-title { color: var(--text-main) !important; }
+  }
+  .modal-footer {
+    background: var(--bg-card-subtle) !important;
+    border-top-color: var(--border-color) !important;
+  }
+  .modal-close {
+    color: var(--text-muted) !important;
+    &:hover { background: var(--bg-card-subtle) !important; color: var(--text-main) !important; }
+  }
+  .meta-pill {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--text-secondary) !important;
+  }
+
+  // ── Design list — approved lock badge ────────────────────────────────────
+  .approved-lock-badge {
+    background: rgba(52,199,89,0.10) !important;
+    border-color: rgba(52,199,89,0.25) !important;
+    color: #34c759 !important;
+  }
+
+  // ── Customer portal — specialist card ────────────────────────────────────
+  .specialist-card, .help-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // ── Category nav icons ────────────────────────────────────────────────────
+  .category-nav-img-wrap {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+  }
+
+  // ── Apple showcase light card ─────────────────────────────────────────────
+  .showcase-card.showcase-light {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+    color: var(--text-main) !important;
+    .showcase-eyebrow { color: var(--text-muted) !important; }
+    .showcase-title   { color: var(--text-main) !important; }
+    .showcase-desc    { color: var(--text-secondary) !important; }
+  }
+  .showcase-card.showcase-eco {
+    background: linear-gradient(145deg, #1a1508 0%, #1e1a10 100%) !important;
+    border-color: rgba(180,140,90,0.20) !important;
+    .showcase-eyebrow { color: #fbbf24 !important; }
+    .showcase-title   { color: var(--text-main) !important; }
+    .showcase-desc    { color: var(--text-secondary) !important; }
+  }
+
+  // ── Apple orders card ─────────────────────────────────────────────────────
+  .apple-orders-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .apple-orders-card-header {
+    border-bottom-color: var(--border-color) !important;
+    .orders-card-title { color: var(--text-main) !important; }
+    .orders-card-sub   { color: var(--text-muted) !important; }
+  }
+
+  // ── Help card icon circle ─────────────────────────────────────────────────
+  .help-card-icon {
+    background: var(--bg-card-subtle) !important;
+  }
+  .help-tag  { color: var(--text-muted) !important; }
+  .help-title { color: var(--text-main) !important; }
+  .help-desc  { color: var(--text-secondary) !important; }
+
+  // ── Spec avatar circle ────────────────────────────────────────────────────
+  .spec-avatar-circle {
+    background: rgba(10,132,255,0.12) !important;
+    &.store-icon-circle { background: rgba(52,199,89,0.10) !important; }
+  }
+
+  // ── Visual badge pill (light bg) ─────────────────────────────────────────
+  .visual-badge-pill {
+    background: rgba(255,255,255,0.06) !important;
+  }
+
+  // ── Empty apple state ─────────────────────────────────────────────────────
+  .empty-apple-state {
+    .empty-icon-wrap { background: rgba(10,132,255,0.10) !important; }
+    h3 { color: var(--text-main) !important; }
+    p  { color: var(--text-muted) !important; }
+  }
+
+  // ── My Designs / My Quotations (customer portal cards) ───────────────────
+  .design-card, .quotation-card, .order-card, .order-timeline-card {
+    background: var(--bg-card) !important;
+    border-color: var(--border-color) !important;
+  }
+  .timeline-track {
+    background: var(--bg-card-subtle) !important;
+    border-color: var(--border-color) !important;
+  }
+
+  // ── Page-level wrappers used inside customer portal ───────────────────────
+  .customer-hero, .store-hero {
+    .store-hero-content { color: var(--text-main) !important; }
+  }
+
+  // ── General: any white card/box we may have missed ────────────────────────
+  // This uses :where() so specificity stays low and won't fight !important above
+  :where(.card, [class*="-card"], [class*="-box"], [class*="-panel"]) {
+    background: var(--bg-card);
+    border-color: var(--border-color);
+    color: var(--text-main);
+  }
+}
+
+// =============================================================================
+// Dark Mode — Surface Token Aliases & Feature SCSS Overrides
+// =============================================================================
+
+// These map the --surface-primary/secondary tokens used by some feature SCSS files
+:root {
+  --surface-primary:   #ffffff;
+  --surface-secondary: #f8fafc;
+}
+
+[data-theme="dark"] {
+  --surface-primary:   var(--bg-card);
+  --surface-secondary: var(--bg-card-subtle);
+
+  // Supplier list
+  .supplier-table-wrapper,
+  .supplier-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+  // Reports
+  .report-card, .chart-card, .stat-card,
+  .report-section { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+  // Payments
+  .payment-card, .payment-summary-card,
+  .receipt-card  { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+  // Orders detail
+  .order-detail-card, .timeline-card, .order-section,
+  .address-card, .note-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+  // Offers
+  .offer-card, .offer-preview, .offer-modal-box,
+  .theme-preview-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+  .offer-card-bg { background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card-subtle) 100%) !important; }
+
+  // Quotation form
+  .quotation-section,
+  .service-select-card { background: var(--bg-card-subtle) !important; border-color: var(--border-color) !important; }
+
+  // Status/priority pills — darken light tints
+  .status-pill.status-pending       { background: rgba(245,158, 11,0.12) !important; color: #fbbf24 !important; }
+  .status-pill.status-design_review { background: rgba(139, 92,246,0.12) !important; color: #a78bfa !important; }
+  .status-pill.status-in_production { background: rgba(249,115, 22,0.12) !important; color: #fb923c !important; }
+  .status-pill.status-cancelled     { background: rgba(255, 59, 48,0.12) !important; color: #ff6b6b !important; }
+
+  // Priority badges
+  [data-priority="urgent"] { background: rgba(255,59,48,0.12)  !important; color: #ff6b6b !important; }
+  [data-priority="high"]   { background: rgba(255,149, 0,0.12) !important; color: #ffb74d !important; }
+  [data-priority="low"]    { background: rgba(255,255,255,0.06) !important; color: var(--text-muted) !important; }
+
+  // Inventory list
+  .inventory-card,
+  .inventory-section { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+  // Customer list / form
+  .customer-card,
+  .customer-form-card { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
+
+  // Generic row hovers
+  tr:hover td { background: var(--bg-card-subtle) !important; }
+  .filter-row, .filter-group { background: var(--bg-card) !important; border-color: var(--border-color) !important; }
 }

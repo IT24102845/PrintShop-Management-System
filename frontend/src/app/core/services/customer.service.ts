@@ -115,5 +115,13 @@ export class CustomerService {
   updateProfile(data: Partial<CustomerProfile>): Observable<CustomerResponse> {
     return this.http.patch<CustomerResponse>(`${this.baseUrl}/profile`, data);
   }
+
+  // ─── Staff: Admin reset of customer password ───────────────────────────────
+  resetCustomerPassword(id: string, newPassword: string): Observable<{ success: boolean; message: string }> {
+    return this.http.patch<{ success: boolean; message: string }>(
+      `${this.baseUrl}/${id}/password`,
+      { new_password: newPassword },
+    );
+  }
 }
 

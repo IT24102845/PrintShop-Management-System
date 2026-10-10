@@ -22,8 +22,8 @@ import { AuthService, UserRole } from '../../../core/services/auth.service';
 import { ToastService } from '../../../core/services/toast.service';
 
 const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-const PHONE_PATTERN = /^(\+?[0-9\s\-\(\)]{7,20})?$/;
-const NAME_PATTERN = /^[a-zA-Z\s\-'.]{2,}$/;
+const PHONE_PATTERN = /^(?:0\d{9}|0\d{2}[-\s]?\d{3}[-\s]?\d{4}|0\d{2}[-\s]?\d{7}|\+94\d{9}|\+94[-\s]?\d{2}[-\s]?\d{3}[-\s]?\d{4}|\+[1-9][0-9\s\-]{7,18})$/;
+const NAME_PATTERN  = /^[a-zA-Z\s\-'.]{2,100}$/;
 
 export interface RoleOption {
   value: UserRole;
@@ -97,7 +97,7 @@ export class CustomerForm implements OnInit {
         email: ['', [Validators.required, Validators.pattern(EMAIL_PATTERN)]],
         password: ['', [Validators.required, Validators.minLength(8), Validators.maxLength(128)]],
         confirm_password: ['', [Validators.required]],
-        phone: ['', [Validators.pattern(PHONE_PATTERN)]],
+        phone: ['', [Validators.pattern(PHONE_PATTERN), Validators.maxLength(20)]],
         role: ['customer_service'],
         address: [''],
         company: [''],

@@ -146,11 +146,11 @@
             class="form-control"
             formControlName="phone"
             [class.is-invalid]="f['phone'].invalid && (f['phone'].touched || isSubmitted)"
-            placeholder="+1 555 123 4567" />
+            placeholder="077 123 4567 or +94 77 123 4567" />
           @if (f['phone'].invalid && (f['phone'].touched || isSubmitted)) {
             <span class="error-msg">
               <span class="material-icons-outlined error-icon">error_outline</span>
-              Please enter a valid phone number (7-20 digits)
+              Please enter a valid phone number (e.g. 077 123 4567 or +94 77 123 4567)
             </span>
           }
         </div>

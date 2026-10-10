@@ -120,6 +120,27 @@ export class AuthService {
     return this.http.post<any>('/api/v1/auth/staff', staffData);
   }
 
+  /** Requests a password reset email. Always resolves with a generic message. */
+  forgotPassword(email: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>('/api/v1/auth/forgot-password', { email });
+  }
+
+  /** Sets a new password using the token from the reset email link. */
+  resetPassword(token: string, newPassword: string): Observable<{ success: boolean; message: string }> {
+    return this.http.post<{ success: boolean; message: string }>('/api/v1/auth/reset-password', {
+      token,
+      new_password: newPassword,
+    });
+  }
+
+  /** Allows the currently logged-in user to change their own password. */
+  changePassword(currentPassword: string, newPassword: string): Observable<{ success: boolean; message: string }> {
+    return this.http.patch<{ success: boolean; message: string }>('/api/v1/auth/change-password', {
+      current_password: currentPassword,
+      new_password:     newPassword,
+    });
+  }
+
   logout(redirect: boolean = true, queryParams?: any): void {
     localStorage.removeItem(this.TOKEN_KEY);
     localStorage.removeItem(this.USER_KEY);

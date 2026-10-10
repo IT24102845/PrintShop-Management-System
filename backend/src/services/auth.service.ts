@@ -16,6 +16,7 @@ import { supabase } from '../config/supabase';
 import { AppError, UserRole } from '../types';
 import { User, UserPublic } from '../models/user.model';
 import logger from '../utils/logger';
+import { isMailerConfigured, sendPasswordResetEmail } from '../utils/mailer';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -328,27 +329,112 @@ export class AuthService {
     logger.info(`Password changed for user: ${userId}`);
   }
 
+  // ─── Admin: Reset Any Customer Password ────────────────────────────────────
+
+  /**
+   * Allows an admin or manager to directly set a new password for any customer
+   * without requiring the current password.
+   *
+   * SECURITY: This method must only be called from routes protected by
+   * authenticate + authorize('admin', 'manager').
+   *
+   * @param customerId  - The UUID from the customers table (NOT the users table)
+   * @param newPassword - The new plaintext password (must meet complexity requirements)
+   */
+  async adminResetCustomerPassword(
+    customerId:  string,
+    newPassword: string,
+  ): Promise<void> {
+    // Step 1: Resolve the customer profile record to get the linked user_id
+    let { data: customerRow } = await supabase
+      .from('customers')
+      .select('id, user_id')
+      .eq('id', customerId)
+      .maybeSingle();
+
+    if (!customerRow) {
+      const byUser = await supabase
+        .from('customers')
+        .select('id, user_id')
+        .eq('user_id', customerId)
+        .maybeSingle();
+      customerRow = byUser.data;
+    }
+
+    if (!customerRow) {
+      throw new AppError('Customer not found', 404);
+    }
+
+    const userId = customerRow.user_id;
+
+    // Step 2: Confirm the linked user has role = 'customer' (safety guard)
+    const { data: user, error: userErr } = await supabase
+      .from('users')
+      .select('id, role')
+      .eq('id', userId)
+      .single();
+
+    if (userErr || !user) {
+      throw new AppError('Customer user account not found', 404);
+    }
+
+    if (user.role !== 'customer') {
+      throw new AppError('This endpoint can only reset customer passwords.', 403);
+    }
+
+    // Step 3: Hash new password and update
+    const newHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+
+    const { error: updateErr } = await supabase
+      .from('users')
+      .update({ password_hash: newHash })
+      .eq('id', userId);
+
+    if (updateErr) {
+      logger.error('Admin password reset failed', updateErr);
+      throw new AppError('Failed to update customer password', 500);
+    }
+
+    // Step 4: Best-effort: invalidate any pending reset tokens (fire and forget)
+    // This may silently fail if the migration has not been run yet — that's acceptable.
+    supabase
+      .from('users')
+      .update({ reset_token_hash: null, reset_token_expires: null })
+      .eq('id', userId)
+      .then(({ error }) => {
+        if (error) logger.warn(`Could not clear reset tokens for user ${userId}`, error);
+      });
+
+    logger.info(`Admin reset password for customer: customerId=${customerId}, userId=${userId}`);
+  }
+
   // ─── Password Reset ─────────────────────────────────────────────────────────
 
   /**
-   * Generates a password reset token for the given email.
-   * Stores the hashed token and expiry in the users table.
-   * Returns the raw token (in production, this would be emailed to the user).
+   * Generates a one-time password reset token for the given email and emails
+   * the reset link to the user. Only the SHA-256 hash of the token is stored.
+   * Always returns the same generic message so the endpoint can't be used to
+   * discover which emails are registered.
    */
-  async requestPasswordReset(email: string): Promise<{ message: string; resetToken?: string }> {
-    const { data: user, error } = await supabase
-      .from('users')
-      .select('id, email, is_active')
-      .eq('email', email.toLowerCase().trim())
-      .single();
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    const genericMessage =
+      'If an account with that email exists, a password reset link has been sent to it.';
 
-    if (error || !user) {
-      // Don't reveal whether email exists — return generic message
-      return { message: 'If an account with that email exists, a password reset link has been generated.' };
+    // Fail uniformly (before looking anything up) if email isn't configured.
+    if (!isMailerConfigured()) {
+      logger.error('Password reset requested but SMTP_USER / SMTP_PASS are not set');
+      throw new AppError('Password reset email service is not configured. Please contact the administrator.', 503);
     }
 
-    if (!user.is_active) {
-      return { message: 'If an account with that email exists, a password reset link has been generated.' };
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('id, email, full_name, is_active')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle();
+
+    if (error || !user || !user.is_active) {
+      // Don't reveal whether the email exists or is active
+      return { message: genericMessage };
     }
 
     // Generate a crypto-random token
@@ -370,13 +456,23 @@ export class AuthService {
       throw new AppError('Failed to process password reset', 500);
     }
 
-    logger.info(`Password reset requested for: ${user.email}`);
+    const frontendUrl = (process.env.FRONTEND_URL ?? 'http://localhost:4200').replace(/\/+$/, '');
+    const resetUrl = `${frontendUrl}/reset-password?token=${rawToken}`;
 
-    // In production, send email with reset link. For demo, return token directly.
-    return {
-      message: 'If an account with that email exists, a password reset link has been generated.',
-      resetToken: rawToken,
-    };
+    try {
+      await sendPasswordResetEmail(user.email, user.full_name ?? 'there', resetUrl);
+    } catch (mailErr) {
+      logger.error('Failed to send password reset email', mailErr);
+      // Invalidate the unsent token
+      await supabase
+        .from('users')
+        .update({ reset_token_hash: null, reset_token_expires: null })
+        .eq('id', user.id);
+      throw new AppError('Could not send the reset email right now. Please try again later.', 502);
+    }
+
+    logger.info(`Password reset email sent to: ${user.email}`);
+    return { message: genericMessage };
   }
 
   /**
@@ -390,14 +486,14 @@ export class AuthService {
       .from('users')
       .select('id, reset_token_hash, reset_token_expires')
       .eq('reset_token_hash', tokenHash)
-      .single();
+      .maybeSingle();
 
     if (error || !user) {
-      throw new AppError('Invalid or expired password reset token', 400);
+      throw new AppError('This reset link is invalid or has already been used. Please request a new one.', 400);
     }
 
     // Check expiry
-    if (new Date(user.reset_token_expires) < new Date()) {
+    if (!user.reset_token_expires || new Date(user.reset_token_expires) < new Date()) {
       throw new AppError('Password reset token has expired. Please request a new one.', 400);
     }
 

@@ -22,6 +22,8 @@
  *    settled (`completed`) payments.
  * 3. Payment Settlement Modal: Implements `paymentForm` with strict validation
  *    (valid UUID, amount > 0.01) to record incoming customer payments.
+ * 4. Edit / Delete: The same modal is reused in edit mode (order is locked),
+ *    and deletions go through a confirmation dialog.
  * ============================================================================
  */
 
@@ -69,6 +71,13 @@ export class PaymentList implements OnInit {
   isLoadingOrders = false;
   manualOrderMode = false;
   selectedOrder: any = null;
+
+  // Edit mode — null means the modal is creating a new payment
+  editingPayment: any = null;
+
+  // Delete confirmation
+  deletingPayment: any = null;
+  isDeleting = false;
 
   readonly paymentMethods: PaymentMethod[] = [
     'cash', 'bank_transfer', 'card', 'online', 'cheque', 'mobile_money'
@@ -186,12 +195,18 @@ export class PaymentList implements OnInit {
     });
   }
 
+  get isEditMode(): boolean {
+    return !!this.editingPayment;
+  }
+
   openRecordModal(orderId?: string) {
     if (this.orders.length === 0) {
       this.loadAvailableOrders();
     }
+    this.editingPayment = null;
     this.manualOrderMode = false;
     this.selectedOrder = orderId ? (this.orders.find(o => o.id === orderId) || null) : null;
+    this.paymentForm.get('order_id')?.enable();
     this.paymentForm.reset({
       order_id: orderId || '',
       amount: null,
@@ -203,9 +218,40 @@ export class PaymentList implements OnInit {
     this.showModal.set(true);
   }
 
+  openEditModal(p: any) {
+    this.editingPayment = p;
+    this.manualOrderMode = false;
+    this.selectedOrder = this.orders.find(o => o.id === p.order_id) || p.orders || null;
+    this.paymentForm.reset({
+      order_id: p.order_id,
+      amount: Number(p.amount),
+      payment_method: p.payment_method,
+      payment_status: p.payment_status,
+      transaction_ref: p.transaction_ref || '',
+      notes: p.notes || '',
+    });
+    // A payment can't be moved to a different order once recorded
+    this.paymentForm.get('order_id')?.disable();
+    this.showModal.set(true);
+  }
+
+  closeModal() {
+    this.showModal.set(false);
+    this.editingPayment = null;
+    this.isSubmitting = false;
+  }
+
   onSubmit() {
+    this.paymentForm.markAllAsTouched();
+    this.cdr.detectChanges();
+
     if (this.paymentForm.invalid) {
-      this.paymentForm.markAllAsTouched();
+      this.toast.error('Please complete all required fields.');
+      return;
+    }
+
+    if (this.isEditMode) {
+      this.submitUpdate();
       return;
     }
 
@@ -223,8 +269,7 @@ export class PaymentList implements OnInit {
       next: res => {
         if (res.success) {
           this.toast.success(`Payment of LKR ${Number(val.amount).toLocaleString()} recorded!`);
-          this.showModal.set(false);
-          this.isSubmitting = false;
+          this.closeModal();
           this.loadStats();
           this.loadPayments();
         }
@@ -232,6 +277,69 @@ export class PaymentList implements OnInit {
       error: err => {
         this.toast.error(err?.error?.message || 'Failed to record payment.');
         this.isSubmitting = false;
+      },
+    });
+  }
+
+  private submitUpdate() {
+    const id = this.editingPayment.id;
+    const val = this.paymentForm.value; // order_id excluded (disabled control)
+    this.isSubmitting = true;
+
+    this.paymentService.updatePayment(id, {
+      amount: Number(val.amount),
+      payment_method: val.payment_method,
+      payment_status: val.payment_status,
+      // Send null so cleared fields are actually removed server-side
+      transaction_ref: val.transaction_ref?.trim() || null,
+      notes: val.notes?.trim() || null,
+    }).subscribe({
+      next: res => {
+        if (res.success) {
+          this.toast.success('Payment updated successfully.');
+          this.closeModal();
+          this.loadStats();
+          this.loadPayments();
+        }
+      },
+      error: err => {
+        this.toast.error(err?.error?.message || 'Failed to update payment.');
+        this.isSubmitting = false;
+        this.cdr.markForCheck();
+      },
+    });
+  }
+
+  openDeleteConfirm(p: any) {
+    this.deletingPayment = p;
+    this.isDeleting = false;
+  }
+
+  closeDeleteConfirm() {
+    this.deletingPayment = null;
+    this.isDeleting = false;
+  }
+
+  confirmDelete() {
+    if (!this.deletingPayment) return;
+    this.isDeleting = true;
+    const amount = Number(this.deletingPayment.amount);
+
+    this.paymentService.deletePayment(this.deletingPayment.id).subscribe({
+      next: () => {
+        this.toast.success(`Payment of LKR ${amount.toLocaleString()} deleted.`);
+        this.closeDeleteConfirm();
+        // Step back a page if we just removed the last row on this page
+        if (this.payments.length === 1 && this.page > 1) {
+          this.page--;
+        }
+        this.loadStats();
+        this.loadPayments();
+      },
+      error: err => {
+        this.toast.error(err?.error?.message || 'Failed to delete payment.');
+        this.isDeleting = false;
+        this.cdr.markForCheck();
       },
     });
   }

@@ -127,23 +127,23 @@
         <a routerLink="/app/production" class="btn btn-ghost btn-sm">Open Kanban →</a>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));gap:0.75rem">
-        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #f59e0b">
+        <div class="pipeline-stage" style="border-top:3px solid #f59e0b">
           <span class="text-xs text-muted">WAITING</span>
           <div class="text-lg font-bold">{{ productionStats?.pendingTasks ?? 0 }}</div>
         </div>
-        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #3b82f6">
+        <div class="pipeline-stage" style="border-top:3px solid #3b82f6">
           <span class="text-xs text-muted">PRINTING</span>
           <div class="text-lg font-bold">{{ productionStats?.activeProduction ?? 0 }}</div>
         </div>
-        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #ea580c">
+        <div class="pipeline-stage" style="border-top:3px solid #ea580c">
           <span class="text-xs text-muted">QUALITY CHECK</span>
           <div class="text-lg font-bold">{{ productionStats?.qualityCheck ?? 0 }}</div>
         </div>
-        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #0ea5e9">
+        <div class="pipeline-stage" style="border-top:3px solid #0ea5e9">
           <span class="text-xs text-muted">READY FOR DELIVERY</span>
           <div class="text-lg font-bold">{{ productionStats?.readyForDelivery ?? 0 }}</div>
         </div>
-        <div style="background:#f8fafc;padding:0.75rem;border-radius:6px;border-top:3px solid #10b981">
+        <div class="pipeline-stage" style="border-top:3px solid #10b981">
           <span class="text-xs text-muted">COMPLETED</span>
           <div class="text-lg font-bold">{{ productionStats?.completedJobs ?? 0 }}</div>
         </div>

@@ -105,6 +105,50 @@ export class AuthController {
       next(error);
     }
   }
+
+  /**
+   * POST /api/v1/auth/forgot-password
+   * Emails a one-time password reset link. Always responds with a generic message.
+   */
+  async forgotPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { email } = req.body as { email: string };
+      const result = await authService.requestPasswordReset(email);
+      sendSuccess(res, null, result.message);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * POST /api/v1/auth/reset-password
+   * Sets a new password using the token from the reset email.
+   */
+  async resetPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { token, new_password } = req.body as { token: string; new_password: string };
+      await authService.resetPassword(token, new_password);
+      sendSuccess(res, null, 'Your password has been reset. You can now sign in.');
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * PATCH /api/v1/customers/:id/password
+   * Admin/Manager can directly set a new password for a customer.
+   * Does NOT require the customer's current password.
+   */
+  async adminResetCustomerPassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = req.params.id as string;
+      const { new_password } = req.body as { new_password: string };
+      await authService.adminResetCustomerPassword(id, new_password);
+      sendSuccess(res, null, 'Customer password updated successfully.');
+    } catch (error) {
+      next(error);
+    }
+  }
 }
 
 export const authController = new AuthController();

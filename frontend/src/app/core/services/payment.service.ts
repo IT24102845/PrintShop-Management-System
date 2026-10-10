@@ -14,6 +14,7 @@
 //   - Listing payments across orders (getAllPayments)
 //   - Fetching payment history for specific orders (getPaymentsByOrderId)
 //   - Revenue metrics for management dashboards (getRevenueStats)
+//   - Single payment lookup, edits, and deletion (getPaymentById / updatePayment / deletePayment)
 // =============================================================================
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
@@ -43,6 +44,17 @@ export interface RecordPaymentDto {
   payment_status?: PaymentStatus;
   transaction_ref?: string;
   notes?: string;
+}
+
+/** Editable payment fields (order_id cannot be changed once recorded) */
+export interface UpdatePaymentDto {
+  amount?: number;
+  payment_method?: PaymentMethod;
+  payment_status?: PaymentStatus;
+  transaction_ref?: string | null;
+  receipt_url?: string | null;
+  paid_at?: string | null;
+  notes?: string | null;
 }
 
 export interface PaymentListResponse {
@@ -80,5 +92,17 @@ export class PaymentService {
     return this.http.get<{ success: boolean; data: { totalRevenue: number; completedPaymentsCount: number } }>(
       `${this.baseUrl}/revenue-stats`
     );
+  }
+
+  getPaymentById(id: string): Observable<PaymentResponse> {
+    return this.http.get<PaymentResponse>(`${this.baseUrl}/${id}`);
+  }
+
+  updatePayment(id: string, dto: UpdatePaymentDto): Observable<PaymentResponse> {
+    return this.http.patch<PaymentResponse>(`${this.baseUrl}/${id}`, dto);
+  }
+
+  deletePayment(id: string): Observable<{ success: boolean; message?: string }> {
+    return this.http.delete<{ success: boolean; message?: string }>(`${this.baseUrl}/${id}`);
   }
 }

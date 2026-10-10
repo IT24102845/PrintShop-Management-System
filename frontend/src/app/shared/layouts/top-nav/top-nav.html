@@ -26,6 +26,22 @@
   <!-- Right side -->
   <div class="topnav-right">
 
+    <!-- Theme Toggle -->
+    <button
+      class="theme-toggle"
+      (click)="themeService.toggle()"
+      [title]="themeService.isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+      [attr.aria-label]="themeService.isDark() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+      [class.is-dark]="themeService.isDark()"
+      id="theme-toggle-btn">
+      <span class="theme-toggle-track">
+        <span class="theme-toggle-thumb">
+          <span class="material-icons-outlined theme-icon theme-icon-moon">dark_mode</span>
+          <span class="material-icons-outlined theme-icon theme-icon-sun">light_mode</span>
+        </span>
+      </span>
+    </button>
+
     <!-- Profile Menu -->
     <div class="profile-wrapper">
       <button class="profile-btn" (click)="toggleProfile()">

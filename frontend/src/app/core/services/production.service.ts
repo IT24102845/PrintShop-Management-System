@@ -125,13 +125,14 @@ export class ProductionService {
     );
   }
 
-  /** Update task metadata: employee, priority, notes, estimated_hours, actual_hours */
+  /** Update task metadata: employee, priority, notes, estimated_hours, actual_hours, status */
   updateTask(id: string, dto: {
     assigned_employee?: string | null;
     priority?: TaskPriority;
     notes?: string;
     estimated_hours?: number;
     actual_hours?: number;
+    status?: ProductionTaskStatus;
   }): Observable<{ success: boolean; data: ProductionTask }> {
     return this.http.patch<{ success: boolean; data: ProductionTask }>(
       `${this.baseUrl}/tasks/${id}`,

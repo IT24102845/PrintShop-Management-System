@@ -136,50 +136,62 @@
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Supplier / Company Name *</label>
-              <input class="form-input" formControlName="supplier_name" placeholder="e.g. Master Paper Mills Ltd" />
+              <input class="form-control" formControlName="supplier_name" placeholder="e.g. Master Paper Mills Ltd"
+                     [class.is-invalid]="supplierForm.get('supplier_name')?.touched && supplierForm.get('supplier_name')?.invalid" />
+              @if (supplierForm.get('supplier_name')?.touched && supplierForm.get('supplier_name')?.invalid) {
+                <span class="error-msg">Supplier name is required (min 2 characters)</span>
+              }
             </div>
             <div class="form-group">
               <label class="form-label">Contact Person</label>
-              <input class="form-input" formControlName="contact_person" placeholder="e.g. Ruwan Silva" />
+              <input class="form-control" formControlName="contact_person" placeholder="e.g. Ruwan Silva" />
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Email Address</label>
-              <input type="email" class="form-input" formControlName="email" placeholder="sales@supplier.com" />
+              <input type="email" class="form-control" formControlName="email" placeholder="sales@supplier.com"
+                     [class.is-invalid]="supplierForm.get('email')?.touched && supplierForm.get('email')?.invalid" />
+              @if (supplierForm.get('email')?.touched && supplierForm.get('email')?.invalid) {
+                <span class="error-msg">Enter a valid email address</span>
+              }
             </div>
             <div class="form-group">
               <label class="form-label">Phone Number</label>
-              <input class="form-input" formControlName="phone" placeholder="+94 11 234 5678" />
+              <input type="tel" class="form-control" formControlName="phone" placeholder="011 234 5678 or +94 11 234 5678"
+                     [class.is-invalid]="supplierForm.get('phone')?.touched && supplierForm.get('phone')?.invalid" />
+              @if (supplierForm.get('phone')?.touched && supplierForm.get('phone')?.invalid) {
+                <span class="error-msg">Enter a valid phone number (e.g. 011 234 5678 or +94 11 234 5678)</span>
+              }
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
               <label class="form-label">Website</label>
-              <input class="form-input" formControlName="website" placeholder="https://supplier.com" />
+              <input class="form-control" formControlName="website" placeholder="https://supplier.com" />
             </div>
             <div class="form-group">
               <label class="form-label">Payment Terms</label>
-              <input class="form-input" formControlName="payment_terms" placeholder="e.g. Net 30, COD, Prepaid" />
+              <input class="form-control" formControlName="payment_terms" placeholder="e.g. Net 30, COD, Prepaid" />
             </div>
           </div>
 
           <div class="form-group">
             <label class="form-label">Physical Address</label>
-            <input class="form-input" formControlName="address" placeholder="e.g. 45 Industrial Zone, Colombo" />
+            <input class="form-control" formControlName="address" placeholder="e.g. 45 Industrial Zone, Colombo" />
           </div>
 
           <div class="form-group">
             <label class="form-label">Notes</label>
-            <textarea class="form-input" rows="2" formControlName="notes" placeholder="Special arrangements or discounts..."></textarea>
+            <textarea class="form-control" rows="2" formControlName="notes" placeholder="Special arrangements or discounts..."></textarea>
           </div>
         </div>
 
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary" (click)="showModal.set(false)">Cancel</button>
-          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting || supplierForm.invalid">
+          <button type="submit" class="btn btn-primary" [disabled]="isSubmitting">
             {{ isSubmitting ? 'Saving...' : (isEditing() ? 'Save Changes' : 'Add Supplier') }}
           </button>
         </div>
